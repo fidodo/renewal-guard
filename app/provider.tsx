@@ -8,7 +8,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
       <ThemeInitializer />
-      {children}
+      <main className="flex-1 ml-64">
+        {" "}
+        {/* Match sidebar width */}
+        {children}
+      </main>
     </Provider>
   );
 }

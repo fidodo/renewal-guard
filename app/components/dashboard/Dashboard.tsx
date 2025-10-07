@@ -9,13 +9,6 @@ import {
   setSubscriptions,
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
-import { Subscription } from "./SubscriptionForm";
-
-// Form type: all subscription fields except backend-generated ones
-export type SubscriptionFormData = Omit<
-  Subscription,
-  "id" | "timestamp" | "status"
->;
 
 const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);

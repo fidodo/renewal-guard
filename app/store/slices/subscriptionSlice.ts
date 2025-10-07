@@ -42,24 +42,6 @@ const initialState: SubscriptionsState = {
   currentSubscription: null,
 };
 
-// Type for creating/updating subscription from frontend form
-export interface SubscriptionFormData {
-  name: string;
-  category: string;
-  plan?: string;
-  price: number;
-  currency: string;
-  phone: string;
-  billingCycle: "daily" | "weekly" | "monthly" | "yearly";
-  startDate: string;
-  renewalDate: string;
-  endDate?: string;
-  notes?: string;
-  autoRenew: boolean;
-  sendReminders: boolean;
-  paymentMethod: string;
-}
-
 const subscriptionsSlice = createSlice({
   name: "subscriptions",
   initialState,

@@ -54,6 +54,7 @@ export const signUp = async (req, res, next) => {
       refreshToken,
       message: "User created successfully",
       user: newUser[0],
+      email: newUser[0].email,
     });
   } catch (error) {
     await session.abortTransaction();

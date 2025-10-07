@@ -15,10 +15,10 @@ export const sendReminders = serve(async (context) => {
   const subscription = await fetchSubscription(context, subscriptionId);
 
   if (!subscription || subscription.status !== "active") return;
-
+  console.log("Subscription found:", subscription);
   // Simulate sending a reminder (e.g., via email)
-  const renewalDate = dayjs(subscription.renewalDate);
-
+  const renewalDate = dayjs(subscription.billingDate.nextBillingDate);
+  console.log("Renewal date:", renewalDate);
   if (renewalDate.isBefore(dayjs())) {
     console.log(
       `Renewal date has already passed for ${subscriptionId}. No reminder needed.`
@@ -66,7 +66,7 @@ const sleepUntilReminder = async (context, label, date) => {
 const triggerReminder = async (context, label, subscription) => {
   return await context.run(label, async () => {
     console.log(`triggering ${label} for ${subscription.user.email}`);
-
+    console.log("Subscription details trigger:", subscription);
     await sendReminderEmail({
       to: subscription.user.email,
       type: label,

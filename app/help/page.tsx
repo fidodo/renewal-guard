@@ -1,14 +1,16 @@
+// app/help/page.tsx
+import Help from "../components/dashboard/help/Help";
 import { LandingNavbar } from "../components/LandingNavbar";
-import Dashboard from "../components/dashboard/Dashboard";
 import Sidebar from "../components/layout/Sidebar";
 
-export default function DashboardPage() {
+export default function HelpPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <LandingNavbar />
+
       <div className="flex flex-1">
         <Sidebar />
-        <Dashboard />
+        <Help />
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
+// app/analytics/page.tsx
+"use client";
+import Analytics from "../components/dashboard/analytics/Analytics";
 import { LandingNavbar } from "../components/LandingNavbar";
-import Dashboard from "../components/dashboard/Dashboard";
 import Sidebar from "../components/layout/Sidebar";
 
-export default function DashboardPage() {
+export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <LandingNavbar />
-      <div className="flex flex-1">
+      <div>
         <Sidebar />
-        <Dashboard />
+        <Analytics />
       </div>
     </div>
   );
