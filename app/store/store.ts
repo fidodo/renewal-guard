@@ -3,6 +3,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import themeReducer from "./slices/themeSlice";
 import userReducer from "./slices/userSlice";
 import subscriptionReducer from "./slices/subscriptionSlice";
+import settingReducer from "./slices/settingSlice";
 // ... import your other reducers
 
 export const store = configureStore({
@@ -10,6 +11,7 @@ export const store = configureStore({
     theme: themeReducer,
     user: userReducer,
     subscription: subscriptionReducer,
+    setting: settingReducer,
 
     // ... your other reducers
   },

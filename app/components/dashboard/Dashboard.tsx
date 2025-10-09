@@ -131,6 +131,49 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteSubscription = async (id: string) => {
+    try {
+      const token =
+        localStorage.getItem("authToken") || localStorage.getItem("token");
+      if (!token) {
+        alert("Please log in to delete subscriptions");
+        return;
+      }
+
+      const isConfirmed = window.confirm(
+        "Are you sure you want to delete this subscription?"
+      );
+      if (!isConfirmed) return;
+
+      const response = await fetch(
+        `http://localhost:5000/api/v1/subscriptions/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ Subscription deleted:", result);
+
+        dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
+        alert("Subscription deleted successfully!");
+      } else {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message ||
+            `Failed to delete subscription: ${response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error deleting subscription:", error);
+      console.log(error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -168,6 +211,7 @@ const Dashboard = () => {
                 key={subscription.id}
                 subscription={subscription}
                 onCancel={handleCancelSubscription}
+                onDelete={handleDeleteSubscription}
                 isCancelling={cancellingIds.has(subscription.id)}
               />
             ))
@@ -194,6 +238,7 @@ const Dashboard = () => {
                   key={subscription.id}
                   subscription={subscription}
                   onCancel={() => {}}
+                  onDelete={handleDeleteSubscription}
                 />
               ))}
             </div>
@@ -212,6 +257,7 @@ const Dashboard = () => {
                   key={subscription.id}
                   subscription={subscription}
                   onCancel={handleCancelSubscription}
+                  onDelete={handleDeleteSubscription}
                   isCancelling={cancellingIds.has(subscription.id)}
                 />
               ))}

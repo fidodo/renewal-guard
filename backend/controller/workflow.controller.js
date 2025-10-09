@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import Subscription from "../models/subscription.model.js";
 import { sendReminderEmail } from "../utils/send-email.js";
 import { sendReminderSMS } from "../utils/send-sms.js";
+import { generateSMSTemplate } from "../utils/sms-template.js";
 
 const require = createRequire(import.meta.url);
 const { serve } = require("@upstash/workflow/express");
@@ -11,6 +12,7 @@ const REMINDERS = [7, 5, 2, 1]; // days before renewal
 
 export const sendReminders = serve(async (context) => {
   const { subscriptionId } = context.requestPayload;
+
   // Logic to send reminders based on the subscriptionId
   const subscription = await fetchSubscription(context, subscriptionId);
 
@@ -40,8 +42,7 @@ export const sendReminders = serve(async (context) => {
       await triggerReminder(
         context,
         `${daysBefore} day${daysBefore === 1 ? "" : "s"} before reminder`,
-        subscription,
-        daysBefore
+        subscription
       );
     }
   }
@@ -73,7 +74,7 @@ const triggerReminder = async (context, label, subscription) => {
       subscription,
     });
 
-    if (subscription.user.phone) {
+    if (subscription.phone) {
       const smsMessage = generateSMSTemplate({
         userName: subscription.user.name,
         subscriptionName: subscription.name,
@@ -81,7 +82,8 @@ const triggerReminder = async (context, label, subscription) => {
         daysLeft,
       });
       await sendReminderSMS({
-        to: subscription.user.phone,
+        to: subscription.phone,
+        type: label,
         message: smsMessage,
       });
     }

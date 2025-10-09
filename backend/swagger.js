@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000/api", // base URL for your backend API
+        url: "http://localhost:5000/api",
       },
     ],
     components: {

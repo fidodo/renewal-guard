@@ -7,13 +7,14 @@ import { Subscription } from "./SubscriptionForm";
 interface SubscriptionCardProps {
   subscription: Subscription;
   onCancel: (id: string) => void;
+  onDelete: (id: string) => void;
   isCancelling?: boolean;
 }
 
 const SubscriptionCard = ({
   subscription,
   onCancel,
-
+  onDelete,
   isCancelling = false,
 }: SubscriptionCardProps) => {
   const getDaysUntilRenewal = (renewalDate: string) => {
@@ -45,6 +46,12 @@ const SubscriptionCard = ({
         return "secondary";
       case "cancelled":
         return "destructive";
+      case "deleted":
+        return "destructive";
+      case "inactive":
+        return "destructive";
+      case "pending":
+        return "destructive";
       default:
         return "secondary";
     }
@@ -58,6 +65,16 @@ const SubscriptionCard = ({
           <Badge variant={getBadgeVariant()}>{subscription.status}</Badge>
           {subscription.autoRenew && subscription.status === "active" && (
             <Badge variant="outline">Auto-renew</Badge>
+          )}
+          {subscription.status === "active" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDelete(subscription.id)}
+              className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+            >
+              Delete
+            </Button>
           )}
         </div>
       </CardHeader>

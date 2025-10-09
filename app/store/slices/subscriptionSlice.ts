@@ -18,7 +18,13 @@ export interface Subscription {
     nextBillingDate: string;
     endDate?: string;
   };
-  status: "active" | "expired" | "cancelled" | "inactive" | "pending";
+  status:
+    | "active"
+    | "expired"
+    | "cancelled"
+    | "deleted"
+    | "inactive"
+    | "pending";
   paymentMethod: string;
   autoRenew: boolean;
   sendReminders: boolean;
@@ -140,7 +146,13 @@ const subscriptionsSlice = createSlice({
       state,
       action: PayloadAction<{
         id: string;
-        status: "active" | "expired" | "cancelled";
+        status:
+          | "active"
+          | "expired"
+          | "cancelled"
+          | "inactive"
+          | "pending"
+          | "deleted";
       }>
     ) => {
       const index = state.subscriptions.findIndex(

@@ -82,7 +82,14 @@ const subscriptionSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["active", "expired", "cancelled", "inactive", "pending"],
+      enum: [
+        "active",
+        "expired",
+        "cancelled",
+        "deleted",
+        "inactive",
+        "pending",
+      ],
       default: "active",
       index: true,
     },
@@ -145,7 +152,7 @@ const subscriptionSchema = new mongoose.Schema(
 // Indexes for search
 subscriptionSchema.index({ userId: 1, name: 1 });
 subscriptionSchema.index({ userId: 1, serviceName: 1 });
-subscriptionSchema.index({ userId: 1, category: 1 });
+
 subscriptionSchema.index({ userId: 1, status: 1 });
 subscriptionSchema.index({ tags: 1 });
 

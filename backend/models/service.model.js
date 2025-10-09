@@ -79,7 +79,7 @@ const serviceSchema = new mongoose.Schema(
 
 // Indexes for service search
 serviceSchema.index({ name: 1 });
-serviceSchema.index({ category: 1 });
+
 serviceSchema.index({ isActive: 1 });
 serviceSchema.index({ tags: 1 });
 

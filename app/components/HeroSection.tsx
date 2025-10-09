@@ -21,7 +21,7 @@ export const HeroSection = () => {
               Get Started Free
             </Link>
             <Link
-              href="/features"
+              href="/learn-more"
               className="rounded-md border border-border bg-background px-6 py-3 text-base font-medium text-foreground transition-colors hover:bg-accent"
             >
               Learn More

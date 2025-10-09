@@ -43,7 +43,13 @@ export interface Subscription {
     nextBillingDate: string;
     endDate?: string;
   };
-  status: "active" | "expired" | "cancelled" | "inactive" | "pending";
+  status:
+    | "active"
+    | "expired"
+    | "cancelled"
+    | "inactive"
+    | "pending"
+    | "deleted";
   paymentMethod: string;
   autoRenew: boolean;
   sendReminders: boolean;
