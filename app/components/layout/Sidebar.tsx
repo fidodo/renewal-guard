@@ -1,12 +1,11 @@
 // components/layout/Sidebar.tsx
 "use client";
 import Link from "next/link";
-import { useTheme } from "../../hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
+import { SidebarThemeToggle } from "./SideBarThemeToggle";
+
 import {
-  Moon,
-  Sun,
   LogOut,
   BarChart3,
   Settings,
@@ -14,15 +13,15 @@ import {
   CreditCard,
 } from "lucide-react";
 
+const menuItems = [
+  { label: "Subscriptions", href: "/dashboard", icon: CreditCard },
+  { label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Help", href: "/help", icon: HelpCircle },
+];
+
 const Sidebar = () => {
-  const { toggleTheme, isDark } = useTheme();
   const pathname = usePathname();
-  const menuItems = [
-    { label: "Subscriptions", href: "/dashboard", icon: CreditCard },
-    { label: "Analytics", href: "/analytics", icon: BarChart3 },
-    { label: "Settings", href: "/settings", icon: Settings },
-    { label: "Help", href: "/help", icon: HelpCircle },
-  ];
 
   const handleLogout = () => {
     // Handle logout logic
@@ -64,7 +63,7 @@ const Sidebar = () => {
       {/* Bottom buttons - compact design */}
       <div className="space-y-3 mt-auto">
         {/* Theme Toggle Button */}
-        <Button
+        {/* <Button
           variant="ghost"
           onClick={toggleTheme}
           className="w-full justify-start px-3 py-2 h-auto"
@@ -80,7 +79,9 @@ const Sidebar = () => {
               {isDark ? "Light Mode" : "Dark Mode"}
             </span>
           </div>
-        </Button>
+        </Button> */}
+
+        <SidebarThemeToggle />
 
         {/* Logout Button */}
         <Button
