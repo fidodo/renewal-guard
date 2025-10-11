@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,9 +23,10 @@ import { useAppDispatch } from "@/app/hooks/redux";
 import {
   createSubscription,
   updateSubscription,
+  setSubscriptions,
 } from "@/app/store/slices/subscriptionSlice";
+import { AppDispatch } from "@/app/store/store";
 
-// Pure subscription data (from backend / DB)
 // Pure subscription data (from backend / DB)
 export interface Subscription {
   _id?: string;
@@ -195,7 +197,7 @@ const SubscriptionForm = ({
       } else {
         dispatch(createSubscription(result.data)); // Assuming response has { data: Subscription }
       }
-
+      await fetchAllSubscriptions(dispatch, token);
       // If there's still a prop callback (for backward compatibility), call it
       if (onSubmit) {
         onSubmit(result.data);
@@ -213,13 +215,40 @@ const SubscriptionForm = ({
     }
   };
 
+  const fetchAllSubscriptions = async (
+    dispatch: AppDispatch,
+    token: string
+  ) => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/v1/subscriptions",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        dispatch(setSubscriptions(result.data || result));
+      }
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+    }
+  };
+
   return (
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {subscription ? "Edit Subscription" : "Add New Subscription"}
-          </DialogTitle>
+          <DialogTitle>Your Dialog Title</DialogTitle>
+          <DialogDescription>
+            {/* Add a meaningful description */}
+            {mode === "edit"
+              ? "Edit existing subscription"
+              : "Create a new subscription"}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

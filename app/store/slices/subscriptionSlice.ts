@@ -86,7 +86,7 @@ const subscriptionsSlice = createSlice({
     // Update existing subscription
     updateSubscription: (state, action: PayloadAction<Subscription>) => {
       const index = state.subscriptions.findIndex(
-        (sub) => sub.id === action.payload.id
+        (sub) => sub._id === action.payload._id || sub.id === action.payload.id
       );
       if (index !== -1) {
         state.subscriptions[index] = action.payload;
