@@ -56,7 +56,7 @@ const SubscriptionCard = ({
         return "secondary";
     }
   };
-  console.log("Rendering SubscriptionCard for:", subscription);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">

@@ -27,8 +27,16 @@ export type SearchResult = {
   type: "subscription" | "service";
   name: string;
   description?: string;
-  price?: number;
-  nextBillingDate?: string;
+  price?: {
+    amount: number;
+    currency: string;
+    billingCycle: string;
+  };
+  billingDate?: {
+    startDate: string;
+    nextBillingDate: string;
+    endDate?: string;
+  };
   category: string;
   relevance: number;
 };
@@ -62,6 +70,12 @@ export const LandingNavbar = () => {
       setIsSearching(true);
       try {
         const token = localStorage.getItem("token");
+        const body = {
+          query,
+          type: filter.type,
+          filters: filter,
+        };
+        console.log("🔍 Search request:", body);
         const response = await fetch(
           "http://localhost:5000/api/v1/search/global",
           {
@@ -70,17 +84,12 @@ export const LandingNavbar = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              query: query,
-              type: filter.type,
-              filters: filter,
-              userId: reduxUser?.id,
-            }),
+            body: JSON.stringify(body),
           }
         );
-
-        if (response.ok) {
-          const data = await response.json();
+        const data = await response.json();
+        if (response.ok && data.success) {
+          console.log("🔍 Search API response:", data);
           setSearchResults(data.data || []);
         } else {
           console.error("Search failed:", response.status);
@@ -93,9 +102,10 @@ export const LandingNavbar = () => {
         setIsSearching(false);
       }
     },
-    [reduxUser?.id]
+    []
   );
 
+  console.log(debouncedSearchQuery, searchFilter);
   // Debounced search effect
   useEffect(() => {
     if (debouncedSearchQuery) {
@@ -153,7 +163,7 @@ export const LandingNavbar = () => {
       <div className="flex justify-center items-center h-16">Loading...</div>
     );
   }
-  console.log("searchquery", searchQuery);
+
   return (
     <>
       <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

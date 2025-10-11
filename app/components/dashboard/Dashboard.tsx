@@ -52,7 +52,6 @@ const Dashboard = () => {
               ? result.data
               : [result.data];
 
-            console.log("🔍 Processed subscriptions data:", subscriptionsData);
             dispatch(setSubscriptions(subscriptionsData));
           }
         } else {

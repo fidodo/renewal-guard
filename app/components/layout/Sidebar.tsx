@@ -63,23 +63,6 @@ const Sidebar = () => {
       {/* Bottom buttons - compact design */}
       <div className="space-y-3 mt-auto">
         {/* Theme Toggle Button */}
-        {/* <Button
-          variant="ghost"
-          onClick={toggleTheme}
-          className="w-full justify-start px-3 py-2 h-auto"
-          size="sm"
-        >
-          <div className="flex items-center">
-            {isDark ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-            <span className="ml-2 text-sm">
-              {isDark ? "Light Mode" : "Dark Mode"}
-            </span>
-          </div>
-        </Button> */}
 
         <SidebarThemeToggle />
 

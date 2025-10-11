@@ -1,15 +1,9 @@
 "use client";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setUser } from "../store/slices/userSlice";
 import { useDispatch } from "react-redux";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-}
 
 export interface ApiResponse {
   success: boolean;
@@ -129,6 +123,7 @@ export default function LoginPage() {
     loginAction,
     initialState
   );
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
   // Handle successful login
   useEffect(() => {
@@ -136,8 +131,11 @@ export default function LoginPage() {
       const userData = localStorage.getItem("user");
       if (userData) {
         dispatch(setUser(JSON.parse(userData)));
+        setSuccessMessage("Login successful!");
       }
-      router.push("/dashboard");
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     }
   }, [state.success, dispatch, router]);
 
@@ -151,6 +149,12 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" action={formAction}>
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <div className="text-green-800 text-sm">{successMessage}</div>
+              <div className="text-green-500 text-sm">Redirecting...</div>
+            </div>
+          )}
           {state.error && (
             <div className="rounded-md p-4 bg-red-50 border border-red-200">
               <div className="text-sm text-red-800">{state.error}</div>

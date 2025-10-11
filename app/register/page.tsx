@@ -4,30 +4,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setUser } from "../store/slices/userSlice";
 import { useDispatch } from "react-redux";
+import { useActionState, useEffect } from "react";
 
-// Define the shape of the form data
-interface SignUpFormData {
+export interface User {
+  id: string;
   name: string;
   email: string;
-  password: string;
-  confirmPassword: string;
 }
 
-// Define the shape of the errors object
-interface FormErrors {
-  name?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-  general?: string;
-}
-
-// Define the shape of the API response (adjust based on your backend)
-interface ApiResponse {
+export interface ApiResponse {
   success: boolean;
   message?: string;
   error?: string;
-
   user: {
     id: string;
     name: string;
@@ -36,135 +24,126 @@ interface ApiResponse {
   token: string;
 }
 
+interface RegisterState {
+  error: string;
+  isLoading: boolean;
+  success: boolean;
+  userData?: User;
+}
+
+const initialState: RegisterState = {
+  error: "",
+  isLoading: false,
+  success: false,
+};
+
+async function registerAction(
+  prevState: RegisterState,
+  formData: FormData
+): Promise<RegisterState> {
+  const name = formData.get("name") as string;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  // Basic validation
+  if (!name || !email || !password) {
+    return {
+      ...prevState,
+      error: "Please fill in all fields",
+      isLoading: false,
+      success: false,
+    };
+  }
+
+  try {
+    // Send register request to backend API
+    const response = await fetch("http://localhost:5000/api/v1/auth/sign-up", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, password }),
+      credentials: "include",
+    });
+
+    // Check if response is OK before parsing JSON
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Register endpoint not found. Check backend routes.");
+      }
+      if (response.status === 409) {
+        throw new Error("User already exists with this email");
+      }
+      if (response.status === 400) {
+        throw new Error("Invalid registration data");
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: ApiResponse = await response.json();
+    console.log("Register response data:", data);
+
+    if (!data.success) {
+      return {
+        ...prevState,
+        error: data.message || data.error || "Registration failed",
+        isLoading: false,
+        success: false,
+      };
+    }
+
+    if (data.token && data.user) {
+      // Save to localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Return user data in state for Redux dispatch
+      return {
+        error: "",
+        isLoading: false,
+        success: true,
+        userData: data.user,
+      };
+    } else {
+      return {
+        ...prevState,
+        error: "Invalid response from server",
+        isLoading: false,
+        success: false,
+      };
+    }
+  } catch (error) {
+    console.error("Register error:", error);
+    return {
+      ...prevState,
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+      isLoading: false,
+      success: false,
+    };
+  }
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState<SignUpFormData>({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  // ✅ Fix: Type errors as an object
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [state, formAction, isPending] = useActionState(
+    registerAction,
+    initialState
+  );
+
   const [successMessage, setSuccessMessage] = useState<string>("");
 
-  const validateForm = (): boolean => {
-    // ✅ Fix: Type newErrors as FormErrors
-    const newErrors: FormErrors = {};
-
-    // Name validation
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
-    }
-
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-
-    // Confirm password validation
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  console.log(formData);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear specific error when user starts typing
-    if (errors[name as keyof FormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-        general: undefined,
-      }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    setErrors({});
-    setSuccessMessage("");
-
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/v1/auth/sign-up",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: formData.name.trim(),
-            email: formData.email.toLowerCase(),
-            password: formData.password,
-          }),
-          credentials: "include",
-        }
-      );
-
-      const data: ApiResponse = await response.json();
-      console.log(data);
-      if (!response.ok) {
-        // ✅ Fix: Set errors as an object with general property
-        setErrors({
-          general: data.error || data.message || "Registration failed",
-        });
-        return;
+  useEffect(() => {
+    if (state.success) {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        dispatch(setUser(JSON.parse(userData)));
+        setSuccessMessage("Registration successful!");
       }
-
-      if (data.success && data.user && data.token) {
-        setSuccessMessage(
-          "Registration successful! Please check your email to verify your account."
-        );
-        // Store in localStorage
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        // Update Redux store
-        dispatch(setUser(data.user));
-        setFormData({
-          name: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 3000);
-      }
-    } catch (errors) {
-      console.log(errors);
-      setErrors({ general: "Network error. Please check your connection." });
-    } finally {
-      setIsLoading(false);
+      router.push("/dashboard");
     }
-  };
+  }, [state.success, dispatch, router]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,19 +158,18 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="text-green-800 text-sm">{successMessage}</div>
-            </div>
-          )}
+          <form className="mt-8 space-y-6" action={formAction}>
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <div className="text-green-800 text-sm">{successMessage}</div>
+              </div>
+            )}
 
-          {errors.general && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="text-red-800 text-sm">{errors.general}</div>
-            </div>
-          )}
-
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {state.error && (
+              <div className="rounded-md p-4 bg-red-50 border border-red-200">
+                <div className="text-sm text-red-800">{state.error}</div>
+              </div>
+            )}
             <div>
               <label
                 htmlFor="name"
@@ -203,16 +181,10 @@ export default function RegisterPage() {
                 id="name"
                 name="name"
                 type="text"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.name ? "border-red-500" : "border-border"
-                }`}
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-border rounded-md placeholder-muted-foreground text-foreground bg-background focus:outline-none focus:ring-primary focus:border-primary focus:ring-2 focus:ring-offset-2"
                 placeholder="Enter your full name"
               />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-              )}
             </div>
 
             <div>
@@ -226,16 +198,9 @@ export default function RegisterPage() {
                 id="email"
                 name="email"
                 type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.email ? "border-red-500" : "border-border"
-                }`}
+                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2`}
                 placeholder="Enter your email"
               />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-              )}
             </div>
 
             <div>
@@ -249,16 +214,10 @@ export default function RegisterPage() {
                 id="password"
                 name="password"
                 type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.password ? "border-red-500" : "border-border"
-                }`}
+                required
+                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2`}
                 placeholder="Create a password (min. 6 characters)"
               />
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-              )}
             </div>
 
             <div>
@@ -272,18 +231,10 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring ${
-                  errors.confirmPassword ? "border-red-500" : "border-border"
-                }`}
+                required
+                className={`w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2`}
                 placeholder="Confirm your password"
               />
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.confirmPassword}
-                </p>
-              )}
             </div>
 
             <div className="flex items-center">
@@ -317,10 +268,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? (
+              {isPending ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
                   Creating account...

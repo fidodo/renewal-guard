@@ -20,7 +20,7 @@ export const sendReminderEmail = async ({ to, type, subscription }) => {
       "MMMM D, YYYY"
     ),
     planName: subscription.name,
-    price: ` ${subscription.currency} ${subscription.price}  (${subscription.frequency})`,
+    price: ` ${subscription.price?.currency} ${subscription.price?.amount}  (${subscription.price?.billingCycle})`,
     PaymentMethod: subscription.paymentMethod,
   };
 

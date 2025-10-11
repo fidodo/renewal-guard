@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 export const globalSearch = async (req, res) => {
   try {
     const { query, type = "all", filters = {} } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
     console.log("🔍 Global search request:", { query, type, filters, userId });
 
     if (!query || query.trim().length === 0) {
@@ -91,7 +91,7 @@ export const globalSearch = async (req, res) => {
 export const searchSubscriptions = async (req, res) => {
   try {
     const { query, filters = {} } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     console.log("📋 Subscription search request:", { query, filters, userId });
 
@@ -330,7 +330,7 @@ export const searchSubscriptionsData = async (userId, query, filters) => {
     filters;
 
   let matchStage = {
-    userId,
+    // userId,
     $or: [{ status: "active" }, { status: "inactive" }],
   };
 

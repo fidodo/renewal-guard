@@ -28,7 +28,10 @@ export const SearchModal = ({
 }: SearchModalProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-
+  console.log(
+    "🚀 ~ file: SearchModal.tsx:29 ~ SearchModal ~ results:",
+    results
+  );
   const quickSearches = [
     {
       type: "price" as SearchType,
@@ -116,12 +119,12 @@ export const SearchModal = ({
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            <button
+            {/* <button
               onClick={onClose}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:bg-accent rounded p-1 transition-colors"
             >
               <X className="h-4 w-4 text-muted-foreground" />
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -208,16 +211,16 @@ export const SearchModal = ({
                         >
                           {result.type}
                         </span>
-                        {result.price && (
+                        {result.price?.amount && (
                           <span className="text-xs text-muted-foreground group-hover:text-accent-foreground/80">
-                            ${result.price}/mo
+                            ${result.price?.amount}/mo
                           </span>
                         )}
-                        {result.nextBillingDate && (
+                        {result.billingDate?.nextBillingDate && (
                           <span className="text-xs text-muted-foreground group-hover:text-accent-foreground/80">
                             Renews:{" "}
                             {new Date(
-                              result.nextBillingDate
+                              result.billingDate?.nextBillingDate
                             ).toLocaleDateString()}
                           </span>
                         )}
