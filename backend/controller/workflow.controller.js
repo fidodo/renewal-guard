@@ -3,7 +3,6 @@ import dayjs from "dayjs";
 import Subscription from "../models/subscription.model.js";
 import { sendReminderEmail } from "../utils/send-email.js";
 import { sendReminderSMS } from "../utils/send-sms.js";
-import { generateSMSTemplate } from "../utils/sms-template.js";
 
 const require = createRequire(import.meta.url);
 const { serve } = require("@upstash/workflow/express");
@@ -15,12 +14,14 @@ export const sendReminders = serve(async (context) => {
 
   // Logic to send reminders based on the subscriptionId
   const subscription = await fetchSubscription(context, subscriptionId);
+  console.log("Subscription found workflow:", subscription);
 
   if (!subscription || subscription.status !== "active") return;
-  console.log("Subscription found:", subscription);
+
   // Simulate sending a reminder (e.g., via email)
   const renewalDate = dayjs(subscription.billingDate.nextBillingDate);
   console.log("Renewal date:", renewalDate);
+
   if (renewalDate.isBefore(dayjs())) {
     console.log(
       `Renewal date has already passed for ${subscriptionId}. No reminder needed.`
@@ -30,6 +31,7 @@ export const sendReminders = serve(async (context) => {
 
   for (const daysBefore of REMINDERS) {
     const reminderDate = renewalDate.subtract(daysBefore, "day");
+    console.log(`Reminder date for ${daysBefore} days:`, reminderDate);
     if (reminderDate.isAfter(dayjs())) {
       await sleepUntilReminder(
         context,
@@ -37,7 +39,7 @@ export const sendReminders = serve(async (context) => {
         reminderDate
       );
     }
-
+    console.log(dayjs().isSame(reminderDate, "day"));
     if (dayjs().isSame(reminderDate, "day")) {
       await triggerReminder(
         context,
@@ -75,16 +77,10 @@ const triggerReminder = async (context, label, subscription) => {
     });
 
     if (subscription.phone) {
-      const smsMessage = generateSMSTemplate({
-        userName: subscription.user.name,
-        subscriptionName: subscription.name,
-        renewalDate: subscription.renewalDate,
-        daysLeft,
-      });
       await sendReminderSMS({
         to: subscription.phone,
         type: label,
-        message: smsMessage,
+        subscription,
       });
     }
   });
