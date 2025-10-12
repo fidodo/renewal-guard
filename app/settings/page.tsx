@@ -330,25 +330,37 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label>Reminder Schedule</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    {[1, 2, 3, 5, 7, 14, 30].map((days) => (
-                      <Badge
-                        key={days}
-                        variant={
-                          settings.reminderDays.includes(days)
-                            ? "default"
-                            : "outline"
-                        }
-                        className="cursor-pointer"
-                        onClick={() => handleReminderDaysChange(days)}
-                      >
-                        {days} day{days !== 1 ? "s" : ""} before
-                      </Badge>
-                    ))}
+                {(!settings.smsReminders || !settings.emailNotifications) && (
+                  <div className="space-y-2">
+                    <Label>Reminder Schedule</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[1, 2, 3, 5, 7, 14, 30].map((days) => {
+                        const isDisabled =
+                          !settings.smsReminders &&
+                          !settings.emailNotifications;
+
+                        return (
+                          <Badge
+                            key={days}
+                            variant={
+                              settings.reminderDays.includes(days)
+                                ? "default"
+                                : "outline"
+                            }
+                            className={`cursor-pointer ${
+                              isDisabled ? "opacity-50 pointer-events-none" : ""
+                            }`}
+                            onClick={() =>
+                              !isDisabled && handleReminderDaysChange(days)
+                            }
+                          >
+                            {days} day{days !== 1 ? "s" : ""} before
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
