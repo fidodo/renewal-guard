@@ -89,7 +89,7 @@ async function loginAction(
       localStorage.setItem("user", JSON.stringify(data.data.user));
 
       // Update Redux state
-      // dispatch(setUser(data.data.user));
+      
       return {
         ...prevState,
         error: "",
@@ -135,7 +135,7 @@ export default function LoginPage() {
       }
       setTimeout(() => {
         router.push("/dashboard");
-      }, 2000);
+      }, 1500);
     }
   }, [state.success, dispatch, router]);
 

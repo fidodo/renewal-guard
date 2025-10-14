@@ -36,7 +36,7 @@ const SubscriptionCard = ({
 
   const formattedPrice = subscription.price.amount
     ? `${subscription.price?.amount?.toFixed(2)} `
-    : "0.00 ($)";
+    : "0.00 (USD)";
 
   const getBadgeVariant = () => {
     switch (subscription.status) {

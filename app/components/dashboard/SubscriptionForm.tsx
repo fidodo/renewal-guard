@@ -47,7 +47,7 @@ export interface Subscription {
   };
   status:
     | "active"
-    | "expired"
+    | "-"
     | "cancelled"
     | "inactive"
     | "pending"

@@ -22,6 +22,10 @@ function Analytics() {
     (state) => state.subscription.subscriptions
   );
 
+    const isLoading = useAppSelector(
+    (state) => state.subscription.loading
+  );
+
   // Calculate analytics data
   const totalMonthlyCost = subscriptions
     .filter((sub) => sub.status === "active")
@@ -58,6 +62,34 @@ function Analytics() {
       cost: parseFloat(cost.toFixed(2)),
     })
   );
+
+    if (isLoading) {
+    return (
+      <div className="ml-64 p-6">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-lg">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+   if (!subscriptions || subscriptions.length === 0) {
+    return (
+      <div className="ml-64 p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">Analytics</h1>
+          <p className="text-muted-foreground">
+            Insights into your subscriptions
+          </p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-lg text-muted-foreground">
+            No subscription data available. Add some subscriptions to see analytics.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="ml-64 p-6">
       <div className="mb-6">
