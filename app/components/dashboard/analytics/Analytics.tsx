@@ -22,9 +22,7 @@ function Analytics() {
     (state) => state.subscription.subscriptions
   );
 
-    const isLoading = useAppSelector(
-    (state) => state.subscription.loading
-  );
+  const isLoading = useAppSelector((state) => state.subscription.loading);
 
   // Calculate analytics data
   const totalMonthlyCost = subscriptions
@@ -63,7 +61,7 @@ function Analytics() {
     })
   );
 
-    if (isLoading) {
+  if (isLoading) {
     return (
       <div className="ml-64 p-6">
         <div className="flex items-center justify-center h-64">
@@ -73,7 +71,7 @@ function Analytics() {
     );
   }
 
-   if (!subscriptions || subscriptions.length === 0) {
+  if (!subscriptions || subscriptions.length === 0) {
     return (
       <div className="ml-64 p-6">
         <div className="mb-6">
@@ -84,7 +82,8 @@ function Analytics() {
         </div>
         <div className="flex items-center justify-center h-64">
           <p className="text-lg text-muted-foreground">
-            No subscription data available. Add some subscriptions to see analytics.
+            No subscription data available. Add some subscriptions to see
+            analytics.
           </p>
         </div>
       </div>

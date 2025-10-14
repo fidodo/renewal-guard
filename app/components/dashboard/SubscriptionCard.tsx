@@ -36,7 +36,7 @@ const SubscriptionCard = ({
 
   const formattedPrice = subscription.price.amount
     ? `${subscription.price?.amount?.toFixed(2)} `
-    : "0.00 (USD)";
+    : "0.00";
 
   const getBadgeVariant = () => {
     switch (subscription.status) {
@@ -86,9 +86,7 @@ const SubscriptionCard = ({
               {subscription.price.billingCycle || "Monthly"}
             </p>
             <p className="text-lg font-semibold">
-              {formattedPrice}{" "}
-              {subscription.price.currency &&
-                ` (${subscription.price.currency})`}
+              {formattedPrice} {subscription.price?.currency ?? "USD"}
             </p>
             <p className="text-sm text-muted-foreground">
               {subscription.status === "active"
