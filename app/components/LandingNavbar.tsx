@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import { Bell, Menu, Search, User, ShieldBan, X, Filter } from "lucide-react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,6 +51,8 @@ export const LandingNavbar = () => {
   const [searchFilter, setSearchFilter] = useState<SearchFilter>({
     type: "all",
   });
+
+  const [, startTransition] = useTransition();
 
   const dispatch = useDispatch();
   const router = useRouter();
@@ -135,12 +137,13 @@ export const LandingNavbar = () => {
     setIsSearchOpen(false);
     setSearchQuery("");
 
-    // Navigate based on result type
-    if (result.type === "subscription") {
-      router.push(`/subscriptions/${result.id}`);
-    } else {
-      router.push(`/services/${result.id}`);
-    }
+    startTransition(() => {
+      if (result.type === "subscription") {
+        router.push(`/subscriptions/${result.id}`);
+      } else {
+        router.push(`/services/${result.id}`);
+      }
+    });
   };
 
   const handleQuickSearch = (type: SearchType, value: string) => {

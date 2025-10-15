@@ -119,12 +119,6 @@ export const SearchModal = ({
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            {/* <button
-              onClick={onClose}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:bg-accent rounded p-1 transition-colors"
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </button> */}
           </div>
         </div>
 

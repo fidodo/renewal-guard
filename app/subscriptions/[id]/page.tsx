@@ -39,6 +39,8 @@ import {
 import { useAppSelector, useAppDispatch } from "@/app/hooks/redux";
 import { updateSubscriptionById } from "@/app/store/slices/subscriptionSlice";
 import { Subscription } from "@/app/components/dashboard/SubscriptionForm";
+import { LandingNavbar } from "@/app/components/LandingNavbar";
+import Sidebar from "@/app/components/layout/Sidebar";
 
 export default function SubscriptionDetailPage() {
   const params = useParams();
@@ -134,252 +136,256 @@ export default function SubscriptionDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/dashboard")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">
-              {isEditing ? (
-                <Input
-                  value={editData.name || ""}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="text-3xl font-bold h-12"
-                />
-              ) : (
-                subscription.name
-              )}
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditing ? (
-                <Input
-                  value={editData.category || ""}
-                  onChange={(e) =>
-                    handleInputChange("category", e.target.value)
-                  }
-                  className="mt-1"
-                  placeholder="category"
-                />
-              ) : (
-                subscription.category
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          {!isEditing ? (
-            <>
-              <Button onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button variant="outline">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button onClick={handleSave} disabled={isSaving}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSaving ? "Saving..." : "Save"}
-              </Button>
-              <Button variant="outline" onClick={handleCancel}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Status Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Subscription Status</span>
-                {getStatusBadge(subscription.status)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Billing Cycle</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editData.billingDate?.nextBillingDate}
-                      onValueChange={(value) =>
-                        handleInputChange("billingDate", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="quarterly">Quarterly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm capitalize">
-                      {subscription.billingDate?.nextBillingDate}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label>Price</Label>
-                  {isEditing ? (
-                    <Input
-                      type="number"
-                      value={editData.price?.amount || ""}
-                      onChange={(e) =>
-                        handleInputChange("price", parseFloat(e.target.value))
-                      }
-                    />
-                  ) : (
-                    <p className="text-sm">
-                      ${subscription.price?.amount}/
-                      {subscription.billingDate?.nextBillingDate}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label>Next Billing</Label>
-                  <p className="text-sm flex items-center">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {new Date(
-                      subscription.billingDate?.nextBillingDate
-                    ).toLocaleDateString()}
-                    <Badge variant="outline" className="ml-2">
-                      {getDaysUntilBilling(
-                        subscription.billingDate?.nextBillingDate
-                      )}{" "}
-                      days
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <Label>Auto Renew</Label>
-                  {isEditing ? (
-                    <Select
-                      value={editData.autoRenew?.toString()}
-                      onValueChange={(value) =>
-                        handleInputChange("autoRenew", value === "true")
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Enabled</SelectItem>
-                        <SelectItem value="false">Disabled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="flex items-center">
-                      {subscription.autoRenew ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
-                      ) : (
-                        <Clock className="h-4 w-4 text-yellow-500 mr-1" />
-                      )}
-                      <span>
-                        {subscription.autoRenew ? "Enabled" : "Disabled"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notes Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes</CardTitle>
-              <CardDescription>
-                Additional information about this subscription
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isEditing ? (
-                <Textarea
-                  value={editData.notes || ""}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  placeholder="Add notes about this subscription..."
-                  rows={4}
-                />
-              ) : (
-                <p className="text-sm">
-                  {subscription.notes || "No notes added."}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Actions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Renew Subscription
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Bell className="h-4 w-4 mr-2" />
-                Set Reminder
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                View Invoices
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Information Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label>Category</Label>
+    <div className="min-h-screen bg-background">
+      <LandingNavbar />
+      <div className="container mx-auto p-6 space-y-6">
+        <Sidebar />
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/dashboard")}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">
+                {isEditing ? (
+                  <Input
+                    value={editData.name || ""}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    className="text-3xl font-bold h-12"
+                  />
+                ) : (
+                  subscription.name
+                )}
+              </h1>
+              <p className="text-muted-foreground">
                 {isEditing ? (
                   <Input
                     value={editData.category || ""}
                     onChange={(e) =>
                       handleInputChange("category", e.target.value)
                     }
+                    className="mt-1"
+                    placeholder="category"
                   />
                 ) : (
-                  <p className="text-sm">{subscription.category}</p>
+                  subscription.category
                 )}
-              </div>
-              <div>
-                <Label>Start Date</Label>
-                <p className="text-sm">
-                  {new Date(
-                    subscription.billingDate?.startDate
-                  ).toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {!isEditing ? (
+              <>
+                <Button onClick={() => setIsEditing(true)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button variant="outline">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={handleSave} disabled={isSaving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+                <Button variant="outline" onClick={handleCancel}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Status Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Subscription Status</span>
+                  {getStatusBadge(subscription.status)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Billing Cycle</Label>
+                    {isEditing ? (
+                      <Select
+                        value={editData.billingDate?.nextBillingDate}
+                        onValueChange={(value) =>
+                          handleInputChange("billingDate", value)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm capitalize">
+                        {subscription.billingDate?.nextBillingDate}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Price</Label>
+                    {isEditing ? (
+                      <Input
+                        type="number"
+                        value={editData.price?.amount || ""}
+                        onChange={(e) =>
+                          handleInputChange("price", parseFloat(e.target.value))
+                        }
+                      />
+                    ) : (
+                      <p className="text-sm">
+                        ${subscription.price?.amount}/
+                        {subscription.billingDate?.nextBillingDate}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label>Next Billing</Label>
+                    <p className="text-sm flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(
+                        subscription.billingDate?.nextBillingDate
+                      ).toLocaleDateString()}
+                      <Badge variant="outline" className="ml-2">
+                        {getDaysUntilBilling(
+                          subscription.billingDate?.nextBillingDate
+                        )}{" "}
+                        days
+                      </Badge>
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Auto Renew</Label>
+                    {isEditing ? (
+                      <Select
+                        value={editData.autoRenew?.toString()}
+                        onValueChange={(value) =>
+                          handleInputChange("autoRenew", value === "true")
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Enabled</SelectItem>
+                          <SelectItem value="false">Disabled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex items-center">
+                        {subscription.autoRenew ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                        ) : (
+                          <Clock className="h-4 w-4 text-yellow-500 mr-1" />
+                        )}
+                        <span>
+                          {subscription.autoRenew ? "Enabled" : "Disabled"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notes Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+                <CardDescription>
+                  Additional information about this subscription
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isEditing ? (
+                  <Textarea
+                    value={editData.notes || ""}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    placeholder="Add notes about this subscription..."
+                    rows={4}
+                  />
+                ) : (
+                  <p className="text-sm">
+                    {subscription.notes || "No notes added."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Actions Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Renew Subscription
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Set Reminder
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Invoices
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Information Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label>Category</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editData.category || ""}
+                      onChange={(e) =>
+                        handleInputChange("category", e.target.value)
+                      }
+                    />
+                  ) : (
+                    <p className="text-sm">{subscription.category}</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Start Date</Label>
+                  <p className="text-sm">
+                    {new Date(
+                      subscription.billingDate?.startDate
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
