@@ -16,7 +16,7 @@ import settingRouter from "./routes/setting.routes.js";
 const app = express();
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(arcjetMiddleware);
 
@@ -25,7 +25,7 @@ app.use(
   cors({
     origin: "http://localhost:3000", // Exact frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers (add more if needed)
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"], // Allowed headers (add more if needed)
     credentials: true, // Required for cookies/credentials
     maxAge: 86400,
   })
@@ -38,6 +38,7 @@ app.use("/api/v1/workflows", workflowRouter);
 app.use("/api/v1/settings", settingRouter);
 app.use("/api-docs", express.static("public"));
 app.use("/api/v1/search", searchRouter);
+app.use("/api/v1/auth", authRouter);
 app.use(cors());
 
 app.use(errorMiddleware);

@@ -85,9 +85,11 @@ export interface SubscriptionFormProps {
   onCancel: () => void;
   onSubmit?: (data: Omit<Subscription, "id" | "status">) => void;
   mode?: "create" | "edit";
+  onSuccess?: () => void;
 }
 
 const SubscriptionForm = ({
+  onSuccess,
   onSubmit,
   onCancel,
   subscription,
@@ -207,6 +209,7 @@ const SubscriptionForm = ({
       console.log(
         `${mode === "edit" ? "Updated" : "Created"} subscription successfully!`
       );
+      onSuccess?.();
 
       // Close the form
       onCancel();

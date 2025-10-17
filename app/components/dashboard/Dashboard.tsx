@@ -9,11 +9,79 @@ import {
   setSubscriptions,
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
+import { useAuth } from "../../hooks/useAuth";
+
+// Enhanced fetch with auto-retry (local version)
+export const fetchWithAuth = async (
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> => {
+  const token = localStorage.getItem("token"); // Changed to const
+
+  const requestOptions: RequestInit = {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  };
+
+  if (token) {
+    requestOptions.headers = {
+      ...requestOptions.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  let response = await fetch(url, requestOptions);
+
+  // If token expired, try to refresh and retry
+  if (response.status === 401) {
+    console.log("🔄 Token expired, attempting refresh...");
+
+    // Refresh token logic
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(
+          "http://localhost:5000/api/v1/auth/refresh-token",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refreshToken }),
+          }
+        );
+
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          if (refreshData.success && refreshData.data?.token) {
+            localStorage.setItem("token", refreshData.data.token);
+            // Get the new token for retry
+            const newToken = refreshData.data.token;
+            // Retry with new token
+            requestOptions.headers = {
+              ...requestOptions.headers,
+              Authorization: `Bearer ${newToken}`,
+            };
+            response = await fetch(url, requestOptions);
+          }
+        }
+      } catch (error) {
+        console.error("Token refresh failed:", error);
+      }
+    }
+  }
+
+  return response;
+};
 
 const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAuth();
 
   // Get subscriptions from Redux store
   const subscriptions = useAppSelector(
@@ -22,48 +90,51 @@ const Dashboard = () => {
   const loading = useAppSelector((state) => state.subscription.loading);
 
   // Fetch subscriptions from backend on component mount
-  useEffect(() => {
-    const fetchSubscriptions = async () => {
-      try {
-        const token =
-          localStorage.getItem("authToken") || localStorage.getItem("token");
-        if (!token) {
-          console.log("No token found, skipping subscription fetch");
-          return;
-        }
+  const fetchSubscriptions = async () => {
+    try {
+      console.log("🔄 Fetching subscriptions...");
 
-        const response = await fetch(
-          "http://localhost:5000/api/v1/subscriptions/user",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const response = await fetchWithAuth(
+        "http://localhost:5000/api/v1/subscriptions/user"
+      );
 
-        // Simple and clean version
-        if (response.ok) {
-          const result = await response.json();
-          console.log("🔍 Raw API response:", result);
+      if (response.ok) {
+        const result = await response.json();
+        console.log("🔍 Raw API response:", result);
 
-          if (result.success && result.data) {
-            const subscriptionsData = Array.isArray(result.data)
-              ? result.data
-              : [result.data];
+        if (result.success && result.data) {
+          const subscriptionsData = Array.isArray(result.data)
+            ? result.data
+            : [result.data];
 
-            dispatch(setSubscriptions(subscriptionsData));
-          }
+          console.log("✅ Setting subscriptions:", subscriptionsData);
+          dispatch(setSubscriptions(subscriptionsData));
         } else {
-          console.error("Failed to fetch subscriptions:", response.status);
+          console.warn("No subscriptions data found in response");
+          dispatch(setSubscriptions([]));
         }
-      } catch (error) {
-        console.error("Error fetching subscriptions:", error);
+      } else {
+        console.error("Failed to fetch subscriptions:", response.status);
+        dispatch(setSubscriptions([]));
       }
-    };
+    } catch (error) {
+      console.error("❌ Error fetching subscriptions:", error);
+      // Proper error handling for unknown type
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+      }
+      dispatch(setSubscriptions([]));
+    }
+  };
 
-    fetchSubscriptions();
-  }, [dispatch]);
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSubscriptions();
+    } else {
+      dispatch(setSubscriptions([]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, dispatch]);
 
   // Filter subscriptions by status
   const activeSubscriptions = subscriptions.filter(
@@ -78,29 +149,18 @@ const Dashboard = () => {
 
   const handleCancelSubscription = async (id: string) => {
     try {
-      const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to cancel subscriptions");
-        return;
-      }
-
       const isConfirmed = window.confirm(
         "Are you sure you want to cancel this subscription?"
       );
       if (!isConfirmed) return;
 
-      // Add to cancelling set to show loading state
       setCancellingIds((prev) => new Set(prev).add(id));
       console.log("Cancelling subscription with ID:", id);
-      const response = await fetch(
+
+      const response = await fetchWithAuth(
         `http://localhost:5000/api/v1/subscriptions/${id}/cancel`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 
@@ -119,9 +179,13 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("❌ Error cancelling subscription:", error);
-      console.log(error);
+      // Proper error handling for unknown type
+      if (error instanceof Error) {
+        alert(error.message || "Failed to cancel subscription");
+      } else {
+        alert("Failed to cancel subscription");
+      }
     } finally {
-      // Remove from cancelling set
       setCancellingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(id);
@@ -132,25 +196,15 @@ const Dashboard = () => {
 
   const handleDeleteSubscription = async (id: string) => {
     try {
-      const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to delete subscriptions");
-        return;
-      }
-
       const isConfirmed = window.confirm(
-        "Are you sure you want to delete this subscription?"
+        "Are you sure you want to delete this subscription? This action cannot be undone."
       );
       if (!isConfirmed) return;
 
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `http://localhost:5000/api/v1/subscriptions/${id}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
@@ -160,6 +214,7 @@ const Dashboard = () => {
 
         dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
         alert("Subscription deleted successfully!");
+        fetchSubscriptions();
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -169,8 +224,18 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("❌ Error deleting subscription:", error);
-      console.log(error);
+      // Proper error handling for unknown type
+      if (error instanceof Error) {
+        alert(error.message || "Failed to delete subscription");
+      } else {
+        alert("Failed to delete subscription");
+      }
     }
+  };
+
+  const handleSubscriptionAdded = () => {
+    setShowForm(false);
+    fetchSubscriptions();
   };
 
   if (loading) {
@@ -255,9 +320,8 @@ const Dashboard = () => {
                 <SubscriptionCard
                   key={subscription.id}
                   subscription={subscription}
-                  onCancel={handleCancelSubscription}
+                  onCancel={() => {}}
                   onDelete={handleDeleteSubscription}
-                  isCancelling={cancellingIds.has(subscription.id)}
                 />
               ))}
             </div>
@@ -299,7 +363,12 @@ const Dashboard = () => {
       </section>
 
       {/* Subscription Form Modal */}
-      {showForm && <SubscriptionForm onCancel={() => setShowForm(false)} />}
+      {showForm && (
+        <SubscriptionForm
+          onCancel={() => setShowForm(false)}
+          onSuccess={handleSubscriptionAdded}
+        />
+      )}
     </div>
   );
 };

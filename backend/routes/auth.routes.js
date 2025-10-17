@@ -4,8 +4,9 @@ import {
   signIn,
   signOut,
   userMe,
-
+  refreshAuthToken,
 } from "../controller/auth.controller.js";
+import authorize from "../middlewares/auth.middleware.js";
 
 const authRouther = Router();
 
@@ -15,5 +16,7 @@ authRouther.post("/sign-in", signIn);
 
 authRouther.post("/sign-out", signOut);
 
-authRouther.get("/me", userMe);
+authRouther.post("/refresh-token", refreshAuthToken);
+
+authRouther.get("/me", authorize, userMe);
 export default authRouther;

@@ -23,6 +23,8 @@ import { LandingNavbar } from "../components/LandingNavbar";
 import Sidebar from "../components/layout/Sidebar";
 import { setSetting, updateSetting } from "../store/slices/settingSlice";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
+import { fetchWithAuth } from "../components/dashboard/Dashboard";
+import { checkAuthStatus } from "../helper/helper";
 
 // Define the settings type
 interface UserSettings {
@@ -59,6 +61,7 @@ export default function SettingsPage() {
 
   // Use local state for form, initialized from Redux or defaults
   const [settings, setLocalSettings] = useState<UserSettings>(defaultSettings);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (setting && Object.keys(setting).length > 0) {
@@ -74,84 +77,76 @@ export default function SettingsPage() {
     }
   }, [setting]);
 
+  // In your SettingsPage component, update the fetchSettings function:
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token =
-          localStorage.getItem("authToken") || localStorage.getItem("token");
+        const token = localStorage.getItem("token");
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        console.log("🔐 Initial auth state:", {
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+        });
+
         if (!token) {
-          console.log("No token found, skipping settings fetch");
+          console.log("❌ No token found, using localStorage settings");
+          loadFromLocalStorage();
           return;
         }
 
         console.log("🔄 Fetching settings from API...");
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        const response = await fetch(`http://localhost:5000/api/v1/settings`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // Use fetchWithAuth which handles token refresh
+        const response = await fetchWithAuth(
+          `http://localhost:5000/api/v1/settings`
+        );
 
         console.log("🔍 Settings API response status:", response.status);
 
         if (response.ok) {
           const result = await response.json();
-          console.log("🔍 Full API response:", result);
+          console.log("✅ Settings fetched successfully:", result);
 
           if (result.success && result.data) {
-            // Handle both array and single object response
             const settingData = Array.isArray(result.data)
               ? result.data[0]
               : result.data;
 
-            console.log("🔍 Processed settings data:", settingData);
-
-            // Check if we actually got valid data
             if (settingData && Object.keys(settingData).length > 0) {
               dispatch(setSetting(settingData));
-              console.log("✅ Settings loaded from API successfully");
+              console.log("✅ Settings loaded from API");
             } else {
-              console.log("⚠️ API returned empty settings data");
-              // Load from localStorage as fallback
-              const localSettings = localStorage.getItem("userSettings");
-              if (localSettings) {
-                console.log("🔄 Loading settings from localStorage fallback");
-                const parsedSettings = JSON.parse(localSettings);
-                dispatch(setSetting(parsedSettings));
-              }
+              console.log("⚠️ API returned empty settings, using fallback");
+              loadFromLocalStorage();
             }
           } else {
-            console.log("⚠️ API response missing data:", result);
-            // Load from localStorage as fallback
-            const localSettings = localStorage.getItem("userSettings");
-            if (localSettings) {
-              console.log("🔄 Loading settings from localStorage fallback");
-              const parsedSettings = JSON.parse(localSettings);
-              dispatch(setSetting(parsedSettings));
-            }
+            console.log("⚠️ API response format issue:", result);
+            loadFromLocalStorage();
           }
+        } else if (response.status === 401) {
+          console.log("❌ Still unauthorized after token refresh");
+          // Token refresh failed, use local storage
+          loadFromLocalStorage();
         } else {
-          console.error("Failed to fetch settings:", response.status);
-          // Load from localStorage as fallback
-          const localSettings = localStorage.getItem("userSettings");
-          if (localSettings) {
-            console.log("🔄 Loading settings from localStorage fallback");
-            const parsedSettings = JSON.parse(localSettings);
-            dispatch(setSetting(parsedSettings));
-          }
+          console.error("❌ Failed to fetch settings:", response.status);
+          loadFromLocalStorage();
         }
       } catch (error) {
-        console.error("Error fetching settings:", error);
-        // Load from localStorage as fallback
-        const localSettings = localStorage.getItem("userSettings");
-        if (localSettings) {
-          console.log("🔄 Loading settings from localStorage error fallback");
-          const parsedSettings = JSON.parse(localSettings);
-          dispatch(setSetting(parsedSettings));
-        }
+        console.error("❌ Error fetching settings:", error);
+        loadFromLocalStorage();
+      }
+    };
+
+    const loadFromLocalStorage = () => {
+      const localSettings = localStorage.getItem("userSettings");
+      if (localSettings) {
+        console.log("📁 Loading settings from localStorage");
+        const parsedSettings = JSON.parse(localSettings);
+        dispatch(setSetting(parsedSettings));
+      } else {
+        console.log("📁 Using default settings");
+        dispatch(setSetting(defaultSettings));
       }
     };
 
@@ -170,26 +165,33 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     console.log("settings:", settings);
+
+    const authStatus = checkAuthStatus();
+    console.log(authStatus);
+    setIsSaving(true);
+
     try {
       const userId = user?.id;
       console.log("id:", userId);
+
+      // Check if user is authenticated
       const token =
         localStorage.getItem("authToken") || localStorage.getItem("token");
-
       if (!token) {
+        // Offline mode - save to localStorage only
         localStorage.setItem("userSettings", JSON.stringify(settings));
+        dispatch(updateSetting(settings));
         alert("Settings saved locally. Sign in to sync across devices.");
         return;
       }
 
-      // Save to backend
-      const response = await fetch(
+      // Save to backend using fetchWithAuth
+      const response = await fetchWithAuth(
         `http://localhost:5000/api/v1/settings/${userId}`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(settings),
         }
@@ -211,22 +213,25 @@ export default function SettingsPage() {
           ? { ...result.data }
           : { ...settings };
 
-        console.log("🔄 Updating Redux with:", updatedSettings);
+        console.log("🔄 Updating all states with:", updatedSettings);
 
         // ✅ Update all three states:
         dispatch(setSetting(updatedSettings)); // Redux
         localStorage.setItem("userSettings", JSON.stringify(updatedSettings)); // localStorage
-        setLocalSettings(updatedSettings); // Local state (THIS FIXES THE UI)
+        setLocalSettings(updatedSettings); // Local state
 
         alert("Settings saved successfully!");
       } else {
-        throw new Error("Failed to save settings to server");
+        throw new Error(result.message || "Failed to save settings to server");
       }
     } catch (error) {
       console.error("Error saving settings:", error);
+      // Fallback to localStorage
       localStorage.setItem("userSettings", JSON.stringify(settings));
       dispatch(updateSetting(settings));
       alert("Settings saved locally (offline mode)");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -454,8 +459,12 @@ export default function SettingsPage() {
                   <Button variant="outline" className="text-destructive">
                     Delete Account
                   </Button>
-                  <Button onClick={handleSaveSettings} className="ml-auto">
-                    Save Settings
+                  <Button
+                    onClick={handleSaveSettings}
+                    className="ml-auto"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Saving..." : "Save Settings"}
                   </Button>
                 </div>
               </CardContent>

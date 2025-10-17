@@ -41,6 +41,90 @@ export type SearchResult = {
   relevance: number;
 };
 
+const refreshAuthToken = async (): Promise<boolean> => {
+  try {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!refreshToken) {
+      console.log("No refresh token available");
+      return false;
+    }
+
+    const response = await fetch(
+      "http://localhost:5000/api/v1/auth/refresh-token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      }
+    );
+    console.log("response", response);
+    if (!response.ok) {
+      console.error("Token refresh failed:", response.status);
+      return false;
+    }
+
+    const data = await response.json();
+
+    if (data.success && data.accessToken && data.refreshToken) {
+      localStorage.setItem("token", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      console.log("Token refreshed successfully");
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    return false;
+  }
+};
+
+// Enhanced fetch with token refresh
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  let token = localStorage.getItem("token");
+
+  const requestOptions: RequestInit = {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  };
+
+  // Add authorization header if token exists
+  if (token) {
+    requestOptions.headers = {
+      ...requestOptions.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  let response = await fetch(url, requestOptions);
+
+  // If token is expired, try to refresh and retry
+  if (response.status === 401) {
+    console.log("Token expired, attempting refresh...");
+    const refreshSuccess = await refreshAuthToken();
+
+    if (refreshSuccess) {
+      // Get new token and retry request
+      token = localStorage.getItem("token");
+      if (token) {
+        requestOptions.headers = {
+          ...requestOptions.headers,
+          Authorization: `Bearer ${token}`,
+        };
+        response = await fetch(url, requestOptions);
+      }
+    }
+  }
+
+  return response;
+};
+
 export const LandingNavbar = () => {
   const { isLoading, isAuthenticated } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -71,24 +155,20 @@ export const LandingNavbar = () => {
 
       setIsSearching(true);
       try {
-        const token = localStorage.getItem("token");
         const body = {
           query,
           type: filter.type,
           filters: filter,
         };
         console.log("🔍 Search request:", body);
-        const response = await fetch(
+        const response = await fetchWithAuth(
           "http://localhost:5000/api/v1/search/global",
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
             body: JSON.stringify(body),
           }
         );
+
         const data = await response.json();
         if (response.ok && data.success) {
           console.log("🔍 Search API response:", data);
@@ -120,18 +200,65 @@ export const LandingNavbar = () => {
   // Focus search input when modal opens
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
   }, [isSearchOpen]);
 
-  const handleLogout = () => {
-    dispatch(clearUser());
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setIsMenuOpen(false);
-    setIsSearchOpen(false);
-    router.push("/");
-  };
+  const handleLogout = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      // Call logout API if tokens exist
+      if (token) {
+        await fetch("http://localhost:5000/api/v1/auth/sign-out", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ refreshToken }),
+        }).catch((error) => {
+          console.error("Logout API error:", error);
+        });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Always clear local storage and state
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      dispatch(clearUser());
+      setIsMenuOpen(false);
+      setIsSearchOpen(false);
+
+      // Redirect to home page
+      router.push("/");
+    }
+  }, [dispatch, router]);
+
+  // Auto-logout after 7 hours
+  useEffect(() => {
+    if (isAuthenticated) {
+      const logoutTimer = setTimeout(() => {
+        console.log("Session expired (7 hours), logging out...");
+        handleLogout();
+      }, 7 * 60 * 60 * 1000); // 7 hours
+
+      return () => clearTimeout(logoutTimer);
+    }
+  }, [isAuthenticated, handleLogout]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSearchQuery("");
+      setSearchResults([]);
+      setIsSearchOpen(false);
+    }
+  }, [isAuthenticated]);
 
   const handleResultClick = (result: SearchResult) => {
     setIsSearchOpen(false);
@@ -159,14 +286,16 @@ export const LandingNavbar = () => {
   const handleCloseSearch = () => {
     setIsSearchOpen(false);
     setSearchQuery("");
+    setSearchResults([]);
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-16">Loading...</div>
+      <div className="flex justify-center items-center h-16 bg-background/95 backdrop-blur">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+      </div>
     );
   }
-
   return (
     <>
       <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

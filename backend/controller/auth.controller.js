@@ -4,9 +4,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import TokenBlacklist from "../models/tokenBlacklist.model.js";
 
-
-
-
 export const signUp = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -203,6 +200,55 @@ export const userMe = async (req, res, next) => {
       success: false,
       message: "Server error",
     });
+    next(error);
+  }
+};
+
+export const refreshAuthToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    console.log(refreshToken);
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "No refresh token provided, authorization denied",
+      });
+    }
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET_KEY
+    );
+
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: process.env.JWT_EXPIRATION_TIME }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+        token,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };
