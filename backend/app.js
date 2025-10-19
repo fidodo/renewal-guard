@@ -14,22 +14,23 @@ import searchRouter from "./routes/search.routes.js";
 import settingRouter from "./routes/setting.routes.js";
 
 const app = express();
+// ✅ CORS setup
+const corsOptions = {
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+// ✅ Handle all preflight OPTIONS requests safely
+app.options(/^.*$/, cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(arcjetMiddleware);
-
-// ✅ CORS middleware BEFORE routes – configure for your frontend origin
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Exact frontend origin
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Allowed methods
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"], // Allowed headers (add more if needed)
-    credentials: true, // Required for cookies/credentials
-    maxAge: 86400,
-  })
-);
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
@@ -38,8 +39,6 @@ app.use("/api/v1/workflows", workflowRouter);
 app.use("/api/v1/settings", settingRouter);
 app.use("/api-docs", express.static("public"));
 app.use("/api/v1/search", searchRouter);
-app.use("/api/v1/auth", authRouter);
-app.use(cors());
 
 app.use(errorMiddleware);
 setupSwagger(app);
