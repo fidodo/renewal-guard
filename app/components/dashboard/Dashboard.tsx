@@ -10,6 +10,7 @@ import {
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
 import { useAuth } from "../../hooks/useAuth";
+import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 
 // Enhanced fetch with auto-retry (local version)
 export const fetchWithAuth = async (
@@ -293,38 +294,22 @@ const Dashboard = () => {
         {/* Expired Subscriptions */}
         {expiredSubscriptions.length > 0 && (
           <section>
-            <h3 className="text-lg font-semibold mb-4">
-              Expired Subscriptions ({expiredSubscriptions.length})
-            </h3>
-            <div className="space-y-4">
-              {expiredSubscriptions.map((subscription) => (
-                <SubscriptionCard
-                  key={subscription.id}
-                  subscription={subscription}
-                  onCancel={() => {}}
-                  onDelete={handleDeleteSubscription}
-                />
-              ))}
-            </div>
+            <ConditionalPaginatedSubscriptions
+              title="Expired Subscriptions"
+              subscriptions={expiredSubscriptions}
+              onDelete={handleDeleteSubscription}
+            />
           </section>
         )}
 
         {/* Cancelled Subscriptions */}
         {cancelledSubscriptions.length > 0 && (
           <section>
-            <h3 className="text-lg font-semibold mb-4">
-              Cancelled Subscriptions ({cancelledSubscriptions.length})
-            </h3>
-            <div className="space-y-4">
-              {cancelledSubscriptions.map((subscription) => (
-                <SubscriptionCard
-                  key={subscription.id}
-                  subscription={subscription}
-                  onCancel={() => {}}
-                  onDelete={handleDeleteSubscription}
-                />
-              ))}
-            </div>
+            <ConditionalPaginatedSubscriptions
+              title="Cancelled Subscriptions"
+              subscriptions={cancelledSubscriptions}
+              onDelete={handleDeleteSubscription}
+            />
           </section>
         )}
       </div>
