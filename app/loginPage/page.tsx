@@ -4,6 +4,165 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setUser } from "../store/slices/userSlice";
 import { useDispatch } from "react-redux";
+import { useAuth } from "../hooks/useAuth";
+
+interface RefreshTokenResponse {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  requiresReauth?: boolean;
+}
+
+// State to prevent multiple simultaneous refresh attempts
+let refreshInProgress: Promise<boolean> | null = null;
+
+// Clear tokens and prompt user to re-login
+const promptReauthentication = (): void => {
+  // Clear all auth tokens
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+
+  // Show login modal or redirect to login page
+  const shouldRelogin = window.confirm(
+    "Your session has expired. Please log in again to continue."
+  );
+
+  if (shouldRelogin) {
+    // Redirect to login page or show login modal
+    window.location.href = "/loginPage";
+  }
+};
+
+const handleInvalidRefreshToken = (): void => {
+  console.log("Refresh token is invalid or expired");
+  promptReauthentication();
+};
+
+const setTokens = (accessToken: string, refreshToken: string): void => {
+  localStorage.setItem("token", accessToken);
+  localStorage.setItem("refreshToken", refreshToken);
+};
+
+const clearTokens = (): void => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+};
+
+// Enhanced token refresh with re-authentication
+const refreshAuthToken = async (): Promise<boolean> => {
+  // Prevent multiple simultaneous refresh attempts
+  if (refreshInProgress) {
+    return refreshInProgress;
+  }
+
+  refreshInProgress = (async (): Promise<boolean> => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (!refreshToken) {
+        console.log("No refresh token available");
+        promptReauthentication();
+        return false;
+      }
+
+      const response = await fetch(
+        "http://localhost:5000/api/v1/auth/refresh-token",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken }),
+        }
+      );
+
+      console.log("Refresh response:", response);
+
+      if (!response.ok) {
+        console.error("Token refresh failed:", response.status);
+
+        // If refresh token is invalid/expired, prompt re-authentication
+        if (response.status === 401 || response.status === 403) {
+          handleInvalidRefreshToken();
+        }
+        return false;
+      }
+
+      const data: RefreshTokenResponse = await response.json();
+
+      // Server can indicate that re-authentication is required
+      if (data.requiresReauth) {
+        promptReauthentication();
+        return false;
+      }
+
+      if (data.success && data.accessToken && data.refreshToken) {
+        setTokens(data.accessToken, data.refreshToken);
+        console.log("Token refreshed successfully");
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      return false;
+    }
+  })();
+
+  const result = await refreshInProgress;
+  refreshInProgress = null;
+  return result;
+};
+
+// Enhanced fetch with token refresh and retry logic
+const fetchWithAuth = async (
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> => {
+  let token = localStorage.getItem("token");
+  let retryCount = 0;
+  const maxRetries = 1;
+
+  const makeRequest = async (): Promise<Response> => {
+    const requestOptions: RequestInit = {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      requestOptions.headers = {
+        ...requestOptions.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
+
+    const response = await fetch(url, requestOptions);
+
+    // If token is expired, try to refresh and retry
+    if (response.status === 401 && retryCount < maxRetries) {
+      console.log("Token expired, attempting refresh...");
+      const refreshSuccess = await refreshAuthToken();
+
+      if (refreshSuccess) {
+        // Get new token and retry request
+        retryCount++;
+        token = localStorage.getItem("token");
+        return makeRequest(); // Recursive retry
+      } else {
+        // Refresh failed, clear tokens and return original response
+        clearTokens();
+      }
+    }
+
+    return response;
+  };
+
+  return makeRequest();
+};
 
 export interface ApiResponse {
   success: boolean;
@@ -39,59 +198,86 @@ async function loginAction(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  // Basic validation
+  // Enhanced validation
   if (!email || !password) {
     return {
       ...prevState,
       error: "Please fill in all fields",
       isLoading: false,
+      success: false,
+    };
+  }
+
+  // Email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return {
+      ...prevState,
+      error: "Please enter a valid email address",
+      isLoading: false,
+      success: false,
     };
   }
 
   try {
     // Send sign-in request to backend API
-    const response = await fetch("http://localhost:5000/api/v1/auth/sign-in", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-      credentials: "include",
-    });
+    const response = await fetchWithAuth(
+      "http://localhost:5000/api/v1/auth/sign-in",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      }
+    );
 
-    // Check if response is OK before parsing JSON
-    if (!response.ok) {
-      // Handle HTTP errors
-      if (response.status === 404) {
-        throw new Error("Login endpoint not found. Check backend routes.");
-      }
-      if (response.status === 401) {
-        throw new Error("Invalid email or password");
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Handle non-JSON responses
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("Server returned non-JSON response");
     }
 
     const data: ApiResponse = await response.json();
-    console.log("Login response data:", data);
+
+    if (!response.ok) {
+      // Handle HTTP errors with server message
+      return {
+        ...prevState,
+        error:
+          data.message || data.error || `Login failed (${response.status})`,
+        isLoading: false,
+        success: false,
+      };
+    }
 
     if (!data.success) {
       return {
         ...prevState,
         error: data.message || data.error || "Login failed",
         isLoading: false,
+        success: false,
       };
     }
 
-    if (data.data.token && data.data.user) {
-      // Save to localStorage
-      localStorage.setItem("refreshToken", data.data.refreshToken);
-      localStorage.setItem("token", data.data.token);
-      localStorage.setItem("user", JSON.stringify(data.data.user));
-
-      // Update Redux state
+    if (data.data?.token && data.data?.user) {
+      // Save to localStorage with error handling
+      try {
+        localStorage.setItem("refreshToken", data.data.refreshToken);
+        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+      } catch (storageError) {
+        console.error("LocalStorage error:", storageError);
+        return {
+          ...prevState,
+          error: "Failed to save login data. Please try again.",
+          isLoading: false,
+          success: false,
+        };
+      }
 
       return {
-        ...prevState,
         error: "",
         isLoading: false,
         success: true,
@@ -125,19 +311,79 @@ export default function LoginPage() {
   );
   const [successMessage, setSuccessMessage] = useState<string>("");
 
+  // Use the auth hook
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      console.log("User already authenticated, redirecting to dashboard...");
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   // Handle successful login
   useEffect(() => {
     if (state.success) {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        dispatch(setUser(JSON.parse(userData)));
-        setSuccessMessage("Login successful!");
-      }
-      setTimeout(() => {
+      try {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          dispatch(setUser(JSON.parse(userData)));
+          setSuccessMessage("Login successful!");
+
+          // Redirect after success message is shown
+          const redirectTimer = setTimeout(() => {
+            router.push("/dashboard");
+          }, 1000);
+
+          return () => clearTimeout(redirectTimer);
+        } else {
+          setSuccessMessage("Login successful! Redirecting...");
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error during login success handling:", error);
+        setSuccessMessage("Login successful! Redirecting...");
         router.push("/dashboard");
-      }, 500);
+      }
     }
   }, [state.success, dispatch, router]);
+
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (state.error) {
+      const inputs = document.querySelectorAll("input");
+      const clearError = () => {
+        if (state.error) {
+          // You might want to implement a way to clear the error state here
+          // This would require modifying the useActionState approach or using a different state management
+        }
+      };
+
+      inputs.forEach((input) => {
+        input.addEventListener("input", clearError);
+      });
+
+      return () => {
+        inputs.forEach((input) => {
+          input.removeEventListener("input", clearError);
+        });
+      };
+    }
+  }, [state.error]);
+
+  if (authLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-foreground">
+            {authLoading ? "Checking authentication..." : "Redirecting..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
@@ -151,55 +397,68 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" action={formAction}>
           {successMessage && (
             <div className="bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="text-green-800 text-sm">{successMessage}</div>
-              <div className="text-green-500 text-sm">Redirecting...</div>
+              <div className="text-green-800 text-sm font-medium">
+                {successMessage}
+              </div>
+              <div className="text-green-600 text-sm mt-1">
+                Redirecting to dashboard...
+              </div>
             </div>
           )}
-          {state.error && (
+
+          {state.error && !state.success && (
             <div className="rounded-md p-4 bg-red-50 border border-red-200">
-              <div className="text-sm text-red-800">{state.error}</div>
+              <div className="text-sm text-red-800 font-medium">
+                {state.error}
+              </div>
             </div>
           )}
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-foreground"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-border rounded-md placeholder-muted-foreground text-foreground bg-background focus:outline-none focus:ring-primary focus:border-primary focus:ring-2 focus:ring-offset-2"
-              placeholder="Enter your email"
-            />
-          </div>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={isPending}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-border rounded-md placeholder-muted-foreground text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                placeholder="Enter your email"
+              />
+            </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-foreground"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-border rounded-md placeholder-muted-foreground text-foreground bg-background focus:outline-none focus:ring-primary focus:border-primary focus:ring-2 focus:ring-offset-2"
-              placeholder="Enter your password"
-            />
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                disabled={isPending}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-border rounded-md placeholder-muted-foreground text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                placeholder="Enter your password"
+              />
+            </div>
           </div>
 
           <div>
             <button
               type="submit"
               disabled={isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {isPending ? (
                 <div className="flex items-center">
@@ -212,12 +471,12 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="text-center pt-4">
             <Link
               href="/register"
-              className="text-primary hover:text-primary/80 font-medium"
+              className="text-primary hover:text-primary/80 font-medium transition-colors duration-200"
             >
-              Don &lsquo;t have an account? Sign up
+              Don&apos;t have an account? Sign up
             </Link>
           </div>
         </form>

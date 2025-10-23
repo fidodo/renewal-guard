@@ -9,6 +9,7 @@ interface SubscriptionCardProps {
   onCancel: (id: string) => void;
   onDelete: (id: string) => void;
   isCancelling?: boolean;
+  onEdit?: () => void;
 }
 
 const SubscriptionCard = ({
@@ -16,6 +17,7 @@ const SubscriptionCard = ({
   onCancel,
   onDelete,
   isCancelling = false,
+  onEdit,
 }: SubscriptionCardProps) => {
   const getDaysUntilRenewal = (renewalDate: string) => {
     try {
@@ -106,7 +108,7 @@ const SubscriptionCard = ({
               >
                 {isCancelling ? "Cancelling..." : "Cancel"}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={onEdit}>
                 Edit
               </Button>
             </div>

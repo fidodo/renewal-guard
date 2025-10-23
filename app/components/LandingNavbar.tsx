@@ -4,12 +4,13 @@ import { Bell, Menu, Search, User, ShieldBan, X, Filter } from "lucide-react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../hooks/useAuth";
+
 import { clearUser } from "../store/slices/userSlice";
 import { RootState } from "../store/store";
 import ThemeToggle from "./ThemeToggle";
 import { SearchModal } from "./SearchModal";
 import { useDebounce } from "../hooks/useDebounce";
+import { useAppSelector } from "../hooks/redux";
 
 // Search types
 export type SearchType = "all" | "subscription" | "service" | "price" | "date";
@@ -41,92 +42,9 @@ export type SearchResult = {
   relevance: number;
 };
 
-const refreshAuthToken = async (): Promise<boolean> => {
-  try {
-    const refreshToken = localStorage.getItem("refreshToken");
-
-    if (!refreshToken) {
-      console.log("No refresh token available");
-      return false;
-    }
-
-    const response = await fetch(
-      "http://localhost:5000/api/v1/auth/refresh-token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
-      }
-    );
-    console.log("response", response);
-    if (!response.ok) {
-      console.error("Token refresh failed:", response.status);
-      return false;
-    }
-
-    const data = await response.json();
-
-    if (data.success && data.accessToken && data.refreshToken) {
-      localStorage.setItem("token", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      console.log("Token refreshed successfully");
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    console.error("Token refresh error:", error);
-    return false;
-  }
-};
-
-// Enhanced fetch with token refresh
-const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
-  let token = localStorage.getItem("token");
-
-  const requestOptions: RequestInit = {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  };
-
-  // Add authorization header if token exists
-  if (token) {
-    requestOptions.headers = {
-      ...requestOptions.headers,
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
-  let response = await fetch(url, requestOptions);
-
-  // If token is expired, try to refresh and retry
-  if (response.status === 401) {
-    console.log("Token expired, attempting refresh...");
-    const refreshSuccess = await refreshAuthToken();
-
-    if (refreshSuccess) {
-      // Get new token and retry request
-      token = localStorage.getItem("token");
-      if (token) {
-        requestOptions.headers = {
-          ...requestOptions.headers,
-          Authorization: `Bearer ${token}`,
-        };
-        response = await fetch(url, requestOptions);
-      }
-    }
-  }
-
-  return response;
-};
-
 export const LandingNavbar = () => {
-  const { isLoading, isAuthenticated } = useAuth();
+  const isLoading = useAppSelector((state) => state.subscription.loading);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,7 +79,7 @@ export const LandingNavbar = () => {
           filters: filter,
         };
         console.log("🔍 Search request:", body);
-        const response = await fetchWithAuth(
+        const response = await fetch(
           "http://localhost:5000/api/v1/search/global",
           {
             method: "POST",
@@ -240,26 +158,6 @@ export const LandingNavbar = () => {
     }
   }, [dispatch, router]);
 
-  // Auto-logout after 7 hours
-  useEffect(() => {
-    if (isAuthenticated) {
-      const logoutTimer = setTimeout(() => {
-        console.log("Session expired (7 hours), logging out...");
-        handleLogout();
-      }, 7 * 60 * 60 * 1000); // 7 hours
-
-      return () => clearTimeout(logoutTimer);
-    }
-  }, [isAuthenticated, handleLogout]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setSearchQuery("");
-      setSearchResults([]);
-      setIsSearchOpen(false);
-    }
-  }, [isAuthenticated]);
-
   const handleResultClick = (result: SearchResult) => {
     setIsSearchOpen(false);
     setSearchQuery("");
@@ -321,7 +219,7 @@ export const LandingNavbar = () => {
             </div>
 
             {/* Search Bar - Desktop */}
-            {isAuthenticated && reduxUser && (
+            {reduxUser && (
               <div className="hidden md:flex flex-1 max-w-md mx-8">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -355,7 +253,7 @@ export const LandingNavbar = () => {
             {/* Right Side Actions */}
             <div className="flex items-center space-x-3">
               <ThemeToggle />
-              {isAuthenticated && reduxUser ? (
+              {reduxUser ? (
                 <>
                   {/* Search Icon - Mobile */}
                   <button
@@ -411,7 +309,7 @@ export const LandingNavbar = () => {
           </div>
 
           {/* Mobile Search Bar */}
-          {isAuthenticated && reduxUser && isMenuOpen && (
+          {reduxUser && isMenuOpen && (
             <div className="pb-3 md:hidden">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -432,7 +330,7 @@ export const LandingNavbar = () => {
           {isMenuOpen && (
             <div className="md:hidden border-t border-border">
               <div className="flex flex-col space-y-2 py-4">
-                {isAuthenticated && reduxUser ? (
+                {reduxUser ? (
                   <button
                     onClick={handleLogout}
                     className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"

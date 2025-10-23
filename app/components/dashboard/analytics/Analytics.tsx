@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppSelector } from "../../../hooks/redux";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "../../../hooks/useAuth";
+
 import {
   BarChart,
   Bar,
@@ -19,39 +19,11 @@ import {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 function Analytics() {
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
   const subscriptions = useAppSelector(
     (state) => state.subscription.subscriptions
   );
 
   const isLoading = useAppSelector((state) => state.subscription.loading);
-
-  // Show loading while checking authentication
-  if (authLoading) {
-    return (
-      <div className="ml-64 p-6">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-lg">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect or show message if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="ml-64 p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
-            <p className="text-muted-foreground">
-              Please log in to view analytics.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Calculate analytics data
   const totalMonthlyCost = subscriptions

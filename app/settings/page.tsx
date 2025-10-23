@@ -23,7 +23,7 @@ import { LandingNavbar } from "../components/LandingNavbar";
 import Sidebar from "../components/layout/Sidebar";
 import { setSetting, updateSetting } from "../store/slices/settingSlice";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
-import { fetchWithAuth } from "../components/dashboard/Dashboard";
+
 import { checkAuthStatus } from "../helper/helper";
 
 // Define the settings type
@@ -62,6 +62,7 @@ export default function SettingsPage() {
   // Use local state for form, initialized from Redux or defaults
   const [settings, setLocalSettings] = useState<UserSettings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (setting && Object.keys(setting).length > 0) {
@@ -97,16 +98,23 @@ export default function SettingsPage() {
 
         console.log("🔄 Fetching settings from API...");
 
-        // Use fetchWithAuth which handles token refresh
-        const response = await fetchWithAuth(
-          `http://localhost:5000/api/v1/settings`
-        );
+        const response = await fetch(`http://localhost:5000/api/v1/settings`);
 
         console.log("🔍 Settings API response status:", response.status);
-
+        const errorMessage = `Failed to fetch settings: ${response.status}`;
         if (response.ok) {
           const result = await response.json();
           console.log("✅ Settings fetched successfully:", result);
+
+          if (!result.success) {
+            console.error(
+              "API returned error:",
+              result.message || result.error
+            );
+            setError(errorMessage);
+            loadFromLocalStorage();
+            return;
+          }
 
           if (result.success && result.data) {
             const settingData = Array.isArray(result.data)
@@ -135,6 +143,7 @@ export default function SettingsPage() {
       } catch (error) {
         console.error("❌ Error fetching settings:", error);
         loadFromLocalStorage();
+        setError(`❌ Error fetching settings:", ${error}`);
       }
     };
 
@@ -185,8 +194,7 @@ export default function SettingsPage() {
         return;
       }
 
-      // Save to backend using fetchWithAuth
-      const response = await fetchWithAuth(
+      const response = await fetch(
         `http://localhost:5000/api/v1/settings/${userId}`,
         {
           method: "PUT",
@@ -263,11 +271,51 @@ export default function SettingsPage() {
     );
   }
 
+  const clearError = () => {
+    setError(null);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <LandingNavbar />
       <div className="flex flex-1">
         <Sidebar />
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
+            <div className="flex items-center">
+              <svg
+                className="w-5 h-5 text-red-500 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-red-800">{error}</span>
+            </div>
+            <button
+              onClick={clearError}
+              className="text-red-500 hover:text-red-700 focus:outline-none"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
         <div className="ml-64 p-6 flex-1">
           <div className="mb-6">
             <h1 className="text-3xl font-bold">Settings</h1>

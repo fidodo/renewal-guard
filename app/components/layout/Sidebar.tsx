@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { SidebarThemeToggle } from "./SideBarThemeToggle";
-import { useAuth } from "../../hooks/useAuth";
-import { useCallback, useEffect, useState } from "react";
+
+import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
 import { clearUser } from "../../store/slices/userSlice";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,6 @@ import {
   Settings,
   HelpCircle,
   CreditCard,
-  User,
 } from "lucide-react";
 
 const menuItems = [
@@ -26,14 +25,9 @@ const menuItems = [
   { label: "Help", href: "/help", icon: HelpCircle },
 ];
 
-const publicMenuItems = [
-  { label: "Home", href: "/", icon: User },
-  { label: "Help", href: "/help", icon: HelpCircle },
-];
-
 const Sidebar = () => {
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useAuth();
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const dispatch = useDispatch();
@@ -74,39 +68,6 @@ const Sidebar = () => {
     }
   }, [dispatch, router, isLoggingOut]);
 
-  // Auto-logout after 7 hours
-  useEffect(() => {
-    if (isAuthenticated) {
-      const logoutTimer = setTimeout(() => {
-        console.log("Session expired (7 hours), logging out...");
-        handleLogout();
-      }, 7 * 60 * 60 * 1000); // 7 hours
-
-      return () => clearTimeout(logoutTimer);
-    }
-  }, [isAuthenticated, handleLogout]);
-
-  // Filter menu items based on authentication
-  const filteredMenuItems = isAuthenticated ? menuItems : publicMenuItems;
-
-  if (isLoading) {
-    return (
-      <div className="w-64 bg-background border-r h-screen p-6 flex flex-col fixed left-0 top-0 overflow-y-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">Renewal Guard</h1>
-        </div>
-        <div className="space-y-1 flex-1">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="flex items-center py-2 px-3 rounded-lg">
-              <div className="w-4 h-4 bg-gray-300 rounded mr-3 animate-pulse"></div>
-              <div className="h-4 bg-gray-300 rounded w-20 animate-pulse"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-64 bg-background border-r h-screen p-6 flex flex-col  fixed left-0 top-0 overflow-y-auto">
       {/* Header */}
@@ -116,7 +77,7 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="space-y-1 flex-1">
-        {filteredMenuItems.map((item) => {
+        {menuItems.map((item) => {
           const IconComponent = item.icon;
           const isActive = pathname === item.href;
           return (
@@ -144,7 +105,7 @@ const Sidebar = () => {
 
         {/* Logout Button */}
         {/* Authentication Buttons */}
-        {isAuthenticated ? (
+        {!isLoggingOut ? (
           // Logout Button for authenticated users
           <Button
             variant="ghost"

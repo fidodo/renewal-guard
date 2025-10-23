@@ -1,3 +1,4 @@
+"use client";
 import { LandingNavbar } from "../components/LandingNavbar";
 import Dashboard from "../components/dashboard/Dashboard";
 import Sidebar from "../components/layout/Sidebar";

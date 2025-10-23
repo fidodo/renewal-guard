@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAppSelector } from "@/app/hooks/redux";
 import { Subscription } from "./SubscriptionForm";
 import SubscriptionCard from "./SubscriptionCard";
 
@@ -14,7 +14,7 @@ interface ConditionalPaginatedSubscriptionsProps {
 export const ConditionalPaginatedSubscriptions: React.FC<
   ConditionalPaginatedSubscriptionsProps
 > = ({ title, subscriptions, onDelete, maxVisible = 2 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const isLoading = useAppSelector((state) => state.subscription.loading);
   const [showAll, setShowAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -35,39 +35,23 @@ export const ConditionalPaginatedSubscriptions: React.FC<
   const currentItems = getItemsToShow();
 
   const handleNextPage = () => {
-    if (!isAuthenticated) {
-      alert("Please log in to view more subscriptions");
-      return;
-    }
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
   const handlePrevPage = () => {
-    if (!isAuthenticated) {
-      alert("Please log in to view more subscriptions");
-      return;
-    }
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
   const handleToggleShowAll = () => {
-    if (!isAuthenticated) {
-      alert("Please log in to view all subscriptions");
-      return;
-    }
     setShowAll(!showAll);
     setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
-    if (!isAuthenticated) {
-      alert("Please log in to navigate pages");
-      return;
-    }
     setCurrentPage(page);
   };
 

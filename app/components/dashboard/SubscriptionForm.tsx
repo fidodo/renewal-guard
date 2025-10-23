@@ -160,6 +160,7 @@ const SubscriptionForm = ({
       let response;
 
       const subscriptionId = subscription?._id || subscription?.id;
+      console.log("subscriptionId", subscriptionId);
 
       if (mode === "edit" && subscription) {
         // Update existing subscription
@@ -173,6 +174,7 @@ const SubscriptionForm = ({
             body: JSON.stringify(subscriptionData),
           }
         );
+        console.log("response", response);
       } else {
         // Create new subscription
         response = await fetch("http://localhost:5000/api/v1/subscriptions", {
@@ -195,9 +197,9 @@ const SubscriptionForm = ({
       console.log("result", result);
       // Update Redux store with the response from backend
       if (mode === "edit" && subscription) {
-        dispatch(updateSubscription(result.data)); // Assuming response has { data: Subscription }
+        dispatch(updateSubscription(result.data));
       } else {
-        dispatch(createSubscription(result.data)); // Assuming response has { data: Subscription }
+        dispatch(createSubscription(result.data));
       }
       await fetchAllSubscriptions(dispatch, token);
       // If there's still a prop callback (for backward compatibility), call it
@@ -506,7 +508,7 @@ const SubscriptionForm = ({
               Cancel
             </Button>
             <Button type="submit">
-              {subscription ? "Update Subscription" : "Create Subscription"}
+              {mode === "edit" ? "Update Subscription" : "Create Subscription"}
             </Button>
           </div>
         </form>
