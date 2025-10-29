@@ -1,53 +1,164 @@
+[![Issues][issues-shield]][issues-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
+# Renewal Guard
+
+<!-- PROJECT LOGO -->
+<br />
+<p align="center">
+
+  <h3 align="center">Renewal-guard-(Full-stack)</h3>
+
+  <p align="center">
+   RENEWAL_GUARD_SUBSCRIPTION_MANAGEMENT
+    <br />
+    <a href="https://github.com/fidodo/renewal-guard"><strong>Explore the repo »</strong></a>
+    <br />
+    <br />
+    <a href="renewal-guard.vercel.app">View Demo</a>
+    ·
+    <a href="https://github.com/fidodo/renewal-guard/issues">Report Bug</a>
+  </p>
+</p>
+
+
+<!-- TABLE OF CONTENTS -->
+## Table of Contents
+
+* [About the Project](#about-the-project)
+  * [Built With](#built-with)
+* [Getting Started](#getting-started)
+  * [Prerequisites](#prerequisites)
+  * [Installation](#installation)
+* [note](#note)
+* [Contact](#contact)
+* [return](#return)
+
+  <!-- ABOUT THE PROJECT -->
+## About The Project
+
+![Product Screen Shot1][screenshot1]
+
+![Product Screen Shot2][screenshot2]
+
+🛡️ Renewal Guard
+
+Renewal Guard is a full-stack web platform designed to simplify subscription and contract management. It allows users to track, organize, and receive reminders for upcoming renewals — preventing missed deadlines or unwanted auto-renewals.
+
+The application is built with a Next.js frontend (for a modern, responsive UI) and a Node.js/Express backend (for API and database operations). 
+Key Features:
+
+📅 Subscription & contract tracking with renewal reminders
+
+🔔 Smart notifications before renewal dates
+
+💻 Responsive dashboard built with Next.js
+
+⚙️ RESTful API powered by Node.js & Express
+
+
+
+Tech Stack:
+
+Frontend: Next.js, TypeScript, SCSS
+
+Backend: Node.js, Express
+
+Database: (MongoDB )
+
+Goal:
+To help individuals and businesses efficiently manage recurring subscriptions, ensuring financial awareness and eliminating forgotten renewals.
+
+
+### Built With
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+<!-- GETTING STARTED -->
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-````bash
- npm install
+* DEPENDENCIES
+```sh
+    "@arcjet/inspect": "^1.0.0-beta.11",
+    "@arcjet/next": "^1.0.0-beta.11",
+    "@arcjet/node": "^1.0.0-beta.10",
+    "@radix-ui/react-accordion": "^1.2.12",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@reduxjs/toolkit": "^2.9.0",
+    "@upstash/redis": "^1.35.6",
+    "@upstash/workflow": "^0.2.19",
+    "bcryptjs": "^3.0.2",
+    "cheerio": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
+    "debug": "~2.6.9",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.544.0",
+    "mailparser": "^3.7.5",
+    "mongodb": "^6.20.0",
+    "mongoose": "^8.18.1",
+    "morgan": "~1.9.1",
+    "next": "15.5.3",
+    "nodemailer": "^7.0.10",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-is": "^19.2.0",
+    "react-redux": "^9.2.0",
+    "recharts": "^3.2.1",
+    "redux-persist": "^6.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "tailwind-merge": "^3.3.1",
+    "twilio": "^5.9.0",
+    "dotenv": "^16.3.1",
+    "nodemon": "^3.0.1"
+```
 
- cd my-app
+### Installation
+
+1. Clone the repo
+```sh
+git clone https://github.com/fidodo/renewal-guard.git
+```
+2. cd my-app
+3.  Install project's dependencies
+```sh
+npm install
+```
+3. Start the development server
+```sh
+npm run dev
+```
 
  ## ⚙️ Environment Setup
 
-1. Copy the example environment file:
+1. Copy the example environment file and add correct .env credentials:
    ```bash
    cp .env.example .env
 
-
-
-
+```bash
 npm run dev
-# or
+ or
 yarn dev
-# or
+ or
 pnpm dev
-# or
+ or
 bun dev
-````
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
+```
+## Libraries and purpose inthe project/ steps in usingthose libraries
 🔐 Arcjet packages (security & rate limiting)
 
 @arcjet/inspect
@@ -113,49 +224,49 @@ HTTP request logger for Express (logs method, URL, status, response time).
 nodemailer
 Sends emails from Node.js (like your subscription renewal reminders).
 
-# i used gmail as email account transporter
+ 1. used gmail as email account transporter
 
-# 1. go to settings in gmail account
+ 2. go to settings in gmail account
 
-# 2. turn 2 step verification
+ 3. turn 2 step verification
 
-# 3. go to manage account search for app password
+ 4. go to manage account search for app password
 
-# 4. enter app name and click next
+ 5. enter app name and click next
 
-# 5. copy app password
+ 6. copy app password
 
 twilio
 Sends SMS, WhatsApp, or calls programmatically (you’re using it for subscription SMS reminders).
 
-# i used twilio as SMS transporter
+1. used twilio as SMS transporter
 
-# 1. go to twilio console
+2. go to twilio console
 
-# 2. create account
+3. create account
 
-# 3. copy account sid and auth token
+4. copy account sid and auth token
 
 🗄 Database
 
 mongodb
 Official MongoDB driver for Node.js (low-level).
 
-# login create a project in mongodb atlas
+1 login create a project in mongodb atlas
 
-# create a database cluster
+2 create a database cluster
 
-# choose free options,if rich enough paid option
+3 choose free options,if rich enough paid option
 
-# clickon create development button
+4 clickon create development button
 
-# copy username and password, paste password in .env
+5 copy username and password, paste password in .env
 
-# create data base user
+6 create data base user
 
-# choose connection method "driver"
+7 choose connection method "driver"
 
-# nminstall mongodb, and get the connection string and paste it in .env
+8 npm install mongodb, and get the connection string and paste it in .env
 
 mongoose
 ODM (Object Data Modeling) library for MongoDB. Lets you define schemas, models, and interact with MongoDB in a structured way.
@@ -258,3 +369,23 @@ Controller (createSubscription) calls Subscription.create(req.body).
 Model (Subscription) saves to MongoDB.
 
 Response: { message: "Subscription created successfully" }.
+
+<!-- CONTACT -->
+## Contact
+
+Ayokunle Ogunfidodo - [@Linkedin](linkedin.com/in/ayokunle-ogunfidodo-a862a0153/)
+
+Project Link: [https://github.com/fidodo/renewal-guard](https://github.com/fidodo/renewal-guard)
+[Back to top](#renewal-guard)
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[issues-shield]: https://img.shields.io/github/issues/fidodo/renewal-guard.svg?style=flat-square
+[issues-url]: https://github.com/fidodo/renewal-guard/issues
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/ayokunle-ogunfidodo-a862a0153/
+[screenshot1]:  https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103408.png
+[screenshot2]: https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103336.png
+
+### return
+[Back to top](#renewal-guard)
