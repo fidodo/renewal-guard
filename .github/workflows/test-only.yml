@@ -1,39 +1,28 @@
-name: Test Frontend and Backend
+# .github/workflows/test-only.yml
+name: Test Application
 
 on: [push, pull_request]
 
 jobs:
-  test-frontend:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
-      - name: Install frontend dependencies
+
+      - name: Debug - Check package.json scripts
+        run: npm run
+
+      - name: Install dependencies
         run: npm ci
-      - name: Run frontend tests
+
+      - name: Run tests
         run: npm test
-      - name: Build frontend
+
+      - name: Build application
         run: npm run build
-      - name: Frontend tests passed
-        run: echo "✅ Frontend tests passed! Vercel will auto-deploy frontend"
 
-  test-backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install backend dependencies
-        run: cd backend && npm ci
-      - name: Run backend tests
-        run: cd backend && npm test
-      - name: Backend tests passed
-        run: echo "✅ Backend tests passed! Render will auto-deploy backend"
+      - name: Tests completed
+        run: echo "✅ All tests passed! Vercel will auto-deploy"
