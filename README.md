@@ -1,5 +1,8 @@
 [![Issues][issues-shield]][issues-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
+![CI](https://github.com/fidodo/renewal-guard/actions/workflows/ci.yml/badge.svg)
+![Vercel](https://vercelbadge.vercel.app/api/fidodo/renewal-guard)
+
 # Renewal Guard
 
 <!-- PROJECT LOGO -->
@@ -20,20 +23,21 @@
   </p>
 </p>
 
-
 <!-- TABLE OF CONTENTS -->
+
 ## Table of Contents
 
-* [About the Project](#about-the-project)
-  * [Built With](#built-with)
-* [Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-* [note](#note)
-* [Contact](#contact)
-* [return](#return)
+- [About the Project](#about-the-project)
+  - [Built With](#built-with)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [note](#note)
+- [Contact](#contact)
+- [return](#return)
 
   <!-- ABOUT THE PROJECT -->
+
 ## About The Project
 
 ![Product Screen Shot1][screenshot1]
@@ -44,7 +48,7 @@
 
 Renewal Guard is a full-stack web platform designed to simplify subscription and contract management. It allows users to track, organize, and receive reminders for upcoming renewals — preventing missed deadlines or unwanted auto-renewals.
 
-The application is built with a Next.js frontend (for a modern, responsive UI) and a Node.js/Express backend (for API and database operations). 
+The application is built with a Next.js frontend (for a modern, responsive UI) and a Node.js/Express backend (for API and database operations).
 Key Features:
 
 📅 Subscription & contract tracking with renewal reminders
@@ -54,8 +58,6 @@ Key Features:
 💻 Responsive dashboard built with Next.js
 
 ⚙️ RESTful API powered by Node.js & Express
-
-
 
 Tech Stack:
 
@@ -68,17 +70,18 @@ Database: (MongoDB )
 Goal:
 To help individuals and businesses efficiently manage recurring subscriptions, ensuring financial awareness and eliminating forgotten renewals.
 
-
 ### Built With
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 <!-- GETTING STARTED -->
+
 ## Getting Started
 
 ### Prerequisites
 
-* DEPENDENCIES
+- DEPENDENCIES
+
 ```sh
     "@arcjet/inspect": "^1.0.0-beta.11",
     "@arcjet/next": "^1.0.0-beta.11",
@@ -126,24 +129,30 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ### Installation
 
 1. Clone the repo
+
 ```sh
 git clone https://github.com/fidodo/renewal-guard.git
 ```
+
 2. cd my-app
-3.  Install project's dependencies
+3. Install project's dependencies
+
 ```sh
 npm install
 ```
+
 3. Start the development server
+
 ```sh
 npm run dev
 ```
 
- ## ⚙️ Environment Setup
+## ⚙️ Environment Setup
 
 1. Copy the example environment file and add correct .env credentials:
    ```bash
    cp .env.example .env
+   ```
 
 ```bash
 npm run dev
@@ -158,7 +167,9 @@ bun dev
 
 
 ```
+
 ## Libraries and purpose inthe project/ steps in usingthose libraries
+
 🔐 Arcjet packages (security & rate limiting)
 
 @arcjet/inspect
@@ -224,17 +235,17 @@ HTTP request logger for Express (logs method, URL, status, response time).
 nodemailer
 Sends emails from Node.js (like your subscription renewal reminders).
 
- 1. used gmail as email account transporter
+1.  used gmail as email account transporter
 
- 2. go to settings in gmail account
+2.  go to settings in gmail account
 
- 3. turn 2 step verification
+3.  turn 2 step verification
 
- 4. go to manage account search for app password
+4.  go to manage account search for app password
 
- 5. enter app name and click next
+5.  enter app name and click next
 
- 6. copy app password
+6.  copy app password
 
 twilio
 Sends SMS, WhatsApp, or calls programmatically (you’re using it for subscription SMS reminders).
@@ -371,6 +382,7 @@ Model (Subscription) saves to MongoDB.
 Response: { message: "Subscription created successfully" }.
 
 <!-- CONTACT -->
+
 ## Contact
 
 Ayokunle Ogunfidodo - [@Linkedin](linkedin.com/in/ayokunle-ogunfidodo-a862a0153/)
@@ -380,12 +392,14 @@ Project Link: [https://github.com/fidodo/renewal-guard](https://github.com/fidod
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [issues-shield]: https://img.shields.io/github/issues/fidodo/renewal-guard.svg?style=flat-square
 [issues-url]: https://github.com/fidodo/renewal-guard/issues
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/ayokunle-ogunfidodo-a862a0153/
-[screenshot1]:  https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103408.png
+[screenshot1]: https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103408.png
 [screenshot2]: https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103336.png
 
 ### return
+
 [Back to top](#renewal-guard)
