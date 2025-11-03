@@ -1,5 +1,34 @@
+# # .github/workflows/test-only.yml
+# name: Test Application
+
+# on: [push, pull_request]
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+
+#       - name: Debug - Check package.json scripts
+#         run: npm run
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Run tests
+#         run: npm test
+
+#       - name: Build application
+#         run: npm run build
+
+#       - name: Tests completed
+#         run: echo "✅ All tests passed! Vercel will auto-deploy"
 # .github/workflows/test-only.yml
-name: Test Application
+# .github/workflows/test-only.yml
+name: Test with Coverage
 
 on: [push, pull_request]
 
@@ -11,18 +40,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Debug - Check package.json scripts
-        run: npm run
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Run tests
-        run: npm test
-
+      - name: Run tests with coverage
+        run: npm test -- --coverage --watchAll=false
       - name: Build application
         run: npm run build
-
-      - name: Tests completed
-        run: echo "✅ All tests passed! Vercel will auto-deploy"
+      - name: Display coverage summary
+        run: |
+          echo "=== Coverage Summary ==="
+          cat coverage/lcov.info | grep -E "(LF:|LH:)" | head -10
+          echo "Full report available in coverage/ folder"
