@@ -1,6 +1,6 @@
 [![Issues][issues-shield]][issues-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-![CI](https://github.com/fidodo/renewal-guard/actions/workflows/ci.yml/badge.svg)
+![Tests](https://github.com/fidodo/renewal-guard/actions/workflows/test-only.yml/badge.svg)
 ![Vercel](https://vercelbadge.vercel.app/api/fidodo/renewal-guard)
 
 # Renewal Guard
