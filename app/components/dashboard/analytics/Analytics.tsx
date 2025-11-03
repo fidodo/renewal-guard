@@ -273,7 +273,7 @@ function Analytics() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">
-                        ${subscription.price?.amount.toFixed(2)}
+                        ${subscription.price?.amount?.toFixed(2)}
                       </p>
                       <p className="text-sm text-muted-foreground capitalize">
                         {subscription.category}

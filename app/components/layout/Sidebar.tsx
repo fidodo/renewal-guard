@@ -9,6 +9,7 @@ import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
 import { clearUser } from "../../store/slices/userSlice";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/hooks/useAuth";
 
 import {
   LogOut,
@@ -21,13 +22,13 @@ import {
 const menuItems = [
   { label: "Subscriptions", href: "/dashboard", icon: CreditCard },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Sub-Settings", href: "/settings", icon: Settings },
   { label: "Help", href: "/help", icon: HelpCircle },
 ];
 
 const Sidebar = () => {
   const pathname = usePathname();
-
+  const { isAuthenticated } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const dispatch = useDispatch();
@@ -105,17 +106,20 @@ const Sidebar = () => {
 
         {/* Logout Button */}
         {/* Authentication Buttons */}
-        {!isLoggingOut ? (
+        {isAuthenticated ? (
           // Logout Button for authenticated users
           <Button
             variant="ghost"
             onClick={handleLogout}
+            disabled={isLoggingOut}
             className="w-full justify-start px-3 py-2 h-auto"
             size="sm"
           >
             <div className="flex items-center">
               <LogOut className="w-4 h-4" />
-              <span className="ml-2 text-sm">Logout</span>
+              <span className="ml-2 text-sm">
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </span>
             </div>
           </Button>
         ) : (

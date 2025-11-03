@@ -1,0 +1,9 @@
+# .eslintignore
+jest.config.*
+jest.setup.*
+**/__tests__/**
+**/__mocks__/**
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/**
+**/__test__/**

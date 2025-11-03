@@ -90,11 +90,13 @@ export const SearchModal = ({
 
   return (
     <div
+      data-testid="search-modal-backdrop"
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4"
       onClick={onClose}
     >
       <div
         ref={modalRef}
+        data-testid="search-modal-content"
         className="w-full max-w-2xl bg-background border border-border rounded-lg shadow-lg max-h-[80vh] overflow-hidden"
         onClick={handleModalClick}
       >

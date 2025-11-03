@@ -34,14 +34,14 @@ export interface Subscription {
   importance?: "low" | "medium" | "high" | "critical";
 }
 
-interface SubscriptionsState {
+export interface SubscriptionsState {
   subscriptions: Subscription[];
   loading: boolean;
   error: string | null;
   currentSubscription: Subscription | null; // For editing/viewing a single subscription
 }
 
-const initialState: SubscriptionsState = {
+export const initialState: SubscriptionsState = {
   subscriptions: [],
   loading: false,
   error: null,

@@ -256,7 +256,11 @@ const SubscriptionForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+          data-testid="subscription-form"
+        >
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Subscription Name *</Label>
@@ -503,7 +507,10 @@ const SubscriptionForm = ({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div
+            className="flex justify-end space-x-3 pt-4"
+            data-testid="create-button"
+          >
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>

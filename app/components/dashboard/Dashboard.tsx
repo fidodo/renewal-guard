@@ -44,18 +44,18 @@ const Dashboard = () => {
   const loading = useAppSelector((state) => state.subscription.loading);
 
   // Filter subscriptions by status
-  const activeSubscriptions = subscriptions.filter(
+  const activeSubscriptions = subscriptions?.filter(
     (sub) => sub.status === "active"
   );
-  const expiredSubscriptions = subscriptions.filter(
+  const expiredSubscriptions = subscriptions?.filter(
     (sub) => sub.status === "expired"
   );
-  const cancelledSubscriptions = subscriptions.filter(
+  const cancelledSubscriptions = subscriptions?.filter(
     (sub) => sub.status === "cancelled"
   );
 
   const sortedActiveSubscriptions = useMemo(() => {
-    return [...activeSubscriptions].sort((a, b) => {
+    return [...(activeSubscriptions ?? [])].sort((a, b) => {
       let aValue, bValue;
 
       switch (sortBy) {
@@ -563,7 +563,7 @@ const Dashboard = () => {
       {/* Other Subscription Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Expired Subscriptions */}
-        {expiredSubscriptions.length > 0 && (
+        {expiredSubscriptions?.length > 0 && (
           <section>
             <ConditionalPaginatedSubscriptions
               title="Expired Subscriptions"
@@ -574,7 +574,7 @@ const Dashboard = () => {
         )}
 
         {/* Cancelled Subscriptions */}
-        {cancelledSubscriptions.length > 0 && (
+        {cancelledSubscriptions?.length > 0 && (
           <section>
             <ConditionalPaginatedSubscriptions
               title="Cancelled Subscriptions"
@@ -593,25 +593,25 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
           <div className="bg-green-50 p-4 rounded-lg border">
             <div className="text-2xl font-bold text-green-600">
-              {activeSubscriptions.length}
+              {activeSubscriptions?.length}
             </div>
             <div className="text-sm text-green-800">Active</div>
           </div>
           <div className="bg-yellow-50 p-4 rounded-lg border">
             <div className="text-2xl font-bold text-yellow-600">
-              {expiredSubscriptions.length}
+              {expiredSubscriptions?.length}
             </div>
             <div className="text-sm text-yellow-800">Expired</div>
           </div>
           <div className="bg-red-50 p-4 rounded-lg border">
             <div className="text-2xl font-bold text-red-600">
-              {cancelledSubscriptions.length}
+              {cancelledSubscriptions?.length}
             </div>
             <div className="text-sm text-red-800">Cancelled</div>
           </div>
           <div className="bg-blue-50 p-4 rounded-lg border">
             <div className="text-2xl font-bold text-blue-600">
-              {subscriptions.length}
+              {subscriptions?.length}
             </div>
             <div className="text-sm text-blue-800">Total</div>
           </div>
