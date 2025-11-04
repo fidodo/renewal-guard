@@ -174,25 +174,23 @@ describe("Analytics", () => {
     ).toBeInTheDocument();
 
     // Check summary cards
-    expect(screen.getByText("Total Subscriptions")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument(); // Total subscriptions
+    expect(screen.getByText("Spending by Category")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
 
-    expect(screen.getByText("Active Subscriptions")).toBeInTheDocument();
-    expect(screen.getAllByText("2")).toHaveLength(2); // Active subscriptions
+    expect(screen.getByText("Subscription Status")).toBeInTheDocument();
+    expect(screen.getAllByText("2")).toHaveLength(2);
 
-    expect(screen.getByText("Monthly Cost")).toBeInTheDocument();
-    expect(screen.getByText("$25.98")).toBeInTheDocument(); // 15.99 + 9.99
+    expect(screen.getByText("Monthly Cost by Category")).toBeInTheDocument();
+    expect(screen.getByText("$25.98")).toBeInTheDocument();
 
     expect(screen.getByText("Categories")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument(); // Entertainment, Music, Other
+    expect(screen.getByText("3")).toBeInTheDocument();
 
     // Check chart titles
     expect(screen.getByText("Monthly Cost by Category")).toBeInTheDocument();
     expect(screen.getByText("Subscription Status")).toBeInTheDocument();
     expect(screen.getByText("Spending by Category")).toBeInTheDocument();
-    expect(
-      screen.getByText("Upcoming Renewals (Next 30 Days)")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Upcoming Renewals (30 Days)")).toBeInTheDocument();
   });
 
   it("calculates correct analytics data", () => {
@@ -246,9 +244,7 @@ describe("Analytics", () => {
     render(<Analytics />);
 
     // Check upcoming renewals section
-    expect(
-      screen.getByText("Upcoming Renewals (Next 30 Days)")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Upcoming Renewals (30 Days)")).toBeInTheDocument();
 
     // Should show active subscriptions in upcoming renewals
     expect(screen.getByText("Netflix")).toBeInTheDocument();
@@ -259,8 +255,8 @@ describe("Analytics", () => {
     expect(screen.getByText("$9.99")).toBeInTheDocument();
 
     // Should show categories
-    expect(screen.getByText("Entertainment")).toBeInTheDocument();
-    expect(screen.getByText("Music")).toBeInTheDocument();
+    expect(screen.getAllByText("Entertainment")).toHaveLength(2);
+    expect(screen.getAllByText("Music")).toHaveLength(2);
   });
 
   it("handles subscriptions with no active ones", () => {

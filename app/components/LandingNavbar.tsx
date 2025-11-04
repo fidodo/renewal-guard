@@ -196,15 +196,17 @@ export const LandingNavbar = () => {
       <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo and Menu */}
+            {/* Logo and Mobile Menu Button */}
             <div className="flex items-center space-x-4">
+              {/* Mobile Menu Button - Show on mobile & tablet (hidden on desktop) */}
               <button
-                className="p-2 hover:bg-accent rounded-md md:hidden"
+                className="p-2 hover:bg-accent rounded-md lg:hidden"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
+
               <Link href="/" className="flex items-center space-x-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                   <ShieldBan className="h-8 w-8 text-primary-foreground" />
@@ -215,9 +217,9 @@ export const LandingNavbar = () => {
               </Link>
             </div>
 
-            {/* Search Bar - Desktop */}
+            {/* DESKTOP VERSION - Search Bar (lg breakpoint and up) */}
             {reduxUser && (
-              <div className="hidden md:flex flex-1 max-w-md mx-8">
+              <div className="hidden lg:flex flex-1 max-w-md mx-8">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
@@ -250,44 +252,60 @@ export const LandingNavbar = () => {
             {/* Right Side Actions */}
             <div className="flex items-center space-x-3">
               <ThemeToggle />
+
               {reduxUser ? (
                 <>
-                  {/* Search Icon - Mobile */}
+                  {/* MOBILE & TABLET VERSION - Search Icon (hidden on desktop) */}
                   <button
-                    className="p-2 hover:bg-accent rounded-md md:hidden"
+                    className="p-2 hover:bg-accent rounded-md lg:hidden"
                     onClick={() => setIsSearchOpen(true)}
                   >
                     <Search className="h-5 w-5" />
                   </button>
 
-                  {/* Notifications */}
-                  <button className="relative p-2 hover:bg-accent rounded-md">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center">
-                      3
-                    </span>
-                  </button>
+                  {/* DESKTOP VERSION - Notifications & User Info */}
+                  <div className="hidden lg:flex items-center space-x-3">
+                    <button className="relative p-2 hover:bg-accent rounded-md">
+                      <Bell className="h-5 w-5" />
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center">
+                        3
+                      </span>
+                    </button>
 
-                  {/* User Menu */}
-                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                      <span className="text-sm font-medium">
+                        {reduxUser?.name}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="rounded-md px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+
+                  {/* MOBILE & TABLET VERSION - Compact User Menu */}
+                  <div className="flex lg:hidden items-center space-x-2">
+                    <button className="relative p-2 hover:bg-accent rounded-md">
+                      <Bell className="h-5 w-5" />
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center">
+                        3
+                      </span>
+                    </button>
+
                     <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                       <User className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <span className="text-sm font-medium hidden sm:block">
-                      {reduxUser?.name}
-                    </span>
                   </div>
-
-                  {/* Logout */}
-                  <button
-                    onClick={handleLogout}
-                    className="rounded-md px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    Logout
-                  </button>
                 </>
               ) : (
-                <>
+                /* UNAUTHENTICATED USER - Desktop Version */
+                <div className="hidden lg:flex items-center space-x-3">
                   <Link
                     href="/loginPage"
                     className="rounded-md px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -300,14 +318,14 @@ export const LandingNavbar = () => {
                   >
                     Register
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Mobile Search Bar */}
+          {/* MOBILE & TABLET VERSION - Search Bar in Menu */}
           {reduxUser && isMenuOpen && (
-            <div className="pb-3 md:hidden">
+            <div className="pb-3 lg:hidden">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
@@ -323,18 +341,36 @@ export const LandingNavbar = () => {
             </div>
           )}
 
-          {/* Mobile Menu */}
+          {/* MOBILE & TABLET VERSION - Mobile Menu */}
           {isMenuOpen && (
-            <div className="md:hidden border-t border-border">
+            <div className="lg:hidden border-t border-border">
               <div className="flex flex-col space-y-2 py-4">
                 {reduxUser ? (
-                  <button
-                    onClick={handleLogout}
-                    className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Logout
-                  </button>
+                  <>
+                    {/* User Info in Mobile Menu */}
+                    <div className="flex items-center space-x-3 px-4 py-2">
+                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{reduxUser?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {reduxUser?.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border pt-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left rounded-md px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </>
                 ) : (
+                  /* UNAUTHENTICATED USER - Mobile Version */
                   <>
                     <Link
                       href="/loginPage"

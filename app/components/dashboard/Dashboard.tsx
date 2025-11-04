@@ -35,8 +35,6 @@ const Dashboard = () => {
     data?: T;
   }
 
-  // const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
   // Get subscriptions from Redux store
   const subscriptions = useAppSelector(
     (state) => state.subscription.subscriptions
@@ -60,19 +58,16 @@ const Dashboard = () => {
 
       switch (sortBy) {
         case "autoRenew":
-          // Sort by autoRenew (true first, then false)
           aValue = a.autoRenew ? 1 : 0;
           bValue = b.autoRenew ? 1 : 0;
           break;
 
         case "nextBillingDate":
-          // Sort by next billing date
           aValue = new Date(a.billingDate.nextBillingDate).getTime();
           bValue = new Date(b.billingDate.nextBillingDate).getTime();
           break;
 
         case "name":
-          // Sort by subscription name
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
@@ -81,7 +76,6 @@ const Dashboard = () => {
           return 0;
       }
 
-      // Apply sort order
       if (sortOrder === "asc") {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
@@ -95,10 +89,8 @@ const Dashboard = () => {
     newSortBy: "autoRenew" | "nextBillingDate" | "name"
   ) => {
     if (sortBy === newSortBy) {
-      // Toggle sort order if clicking the same sort type
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
-      // Set new sort type and default to ascending
       setSortBy(newSortBy);
       setSortOrder("asc");
     }
@@ -151,7 +143,6 @@ const Dashboard = () => {
   const handleFormSuccess = () => {
     setShowForm(false);
     setEditingSubscription(null);
-    // Refresh your subscriptions data here
     fetchSubscriptions();
   };
 
@@ -166,7 +157,6 @@ const Dashboard = () => {
     try {
       console.log("🔄 Fetching subscriptions...");
 
-      // Get token from localStorage
       const token = localStorage.getItem("token");
 
       if (!token) {
@@ -186,13 +176,11 @@ const Dashboard = () => {
 
       console.log("📊 Response status:", response.status);
 
-      // Handle 401 - Token expired or invalid
       if (response.status === 401) {
         console.log("Token expired, attempting refresh...");
         const refreshSuccess = await refreshAuthToken();
 
         if (refreshSuccess) {
-          // Retry the request with new token
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
@@ -211,7 +199,6 @@ const Dashboard = () => {
           }
         }
 
-        // If refresh failed or retry failed
         setError("Session expired. Please log in again.");
         dispatch(setSubscriptions([]));
         return;
@@ -263,6 +250,7 @@ const Dashboard = () => {
       dispatch(setSubscriptions([]));
     }
   };
+
   useEffect(() => {
     fetchSubscriptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -291,11 +279,9 @@ const Dashboard = () => {
         },
       });
 
-      // Handle 401 - Token expired
       if (response.status === 401) {
         const refreshSuccess = await refreshAuthToken();
         if (refreshSuccess) {
-          // Retry with new token
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(
@@ -350,6 +336,7 @@ const Dashboard = () => {
       });
     }
   };
+
   const handleDeleteSubscription = async (id: string) => {
     try {
       const isConfirmed = window.confirm(
@@ -371,11 +358,9 @@ const Dashboard = () => {
         },
       });
 
-      // Handle 401 - Token expired
       if (response.status === 401) {
         const refreshSuccess = await refreshAuthToken();
         if (refreshSuccess) {
-          // Retry with new token
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(`/api/v1/subscriptions/${id}`, {
@@ -435,13 +420,12 @@ const Dashboard = () => {
     );
   }
 
-  // Function to clear error
   const clearError = () => {
     setError(null);
   };
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-4 sm:p-6">
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
           <div className="flex items-center">
@@ -478,47 +462,99 @@ const Dashboard = () => {
           </button>
         </div>
       )}
-      {/* Header with Add Subscription Button */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">
-          UPCOMING RENEWALS ({sortedActiveSubscriptions.length})
-        </h2>
-        <div className="flex justify-between items-center mb-6">
+
+      {/* UPDATED HEADER SECTION - Mobile Optimized */}
+      <div className="flex flex-col gap-4 mb-6">
+        {/* First Row: Title only */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-center sm:text-left">
+            UPCOMING RENEWALS ({sortedActiveSubscriptions.length})
+          </h2>
+
+          {/* Desktop Version - Hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-4">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSortClick("autoRenew")}
+                className="flex items-center gap-2"
+              >
+                {getSortIcon("autoRenew")}
+                {getSortButtonLabel("autoRenew")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSortClick("nextBillingDate")}
+                className="flex items-center gap-2"
+              >
+                {getSortIcon("nextBillingDate")}
+                {getSortButtonLabel("nextBillingDate")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSortClick("name")}
+                className="flex items-center gap-2"
+              >
+                {getSortIcon("name")}
+                {getSortButtonLabel("name")}
+              </Button>
+            </div>
+            <Button
+              onClick={handleAddNewClick}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Subscription
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Only: Sort Icons and Add Button */}
+        <div className="sm:hidden flex flex-col gap-3">
+          {/* Sort Buttons Row */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("autoRenew")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 flex-1 justify-center"
             >
               {getSortIcon("autoRenew")}
-              {getSortButtonLabel("autoRenew")}
+              <span className="text-xs">Auto Renew</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("nextBillingDate")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 flex-1 justify-center"
             >
               {getSortIcon("nextBillingDate")}
-              {getSortButtonLabel("nextBillingDate")}
+              <span className="text-xs">Next Billing</span>
             </Button>
-
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("name")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 flex-1 justify-center"
             >
               {getSortIcon("name")}
-              {getSortButtonLabel("name")}
+              <span className="text-xs">Name</span>
             </Button>
           </div>
+
+          {/* Add New Button - Full width on mobile */}
+          <Button
+            onClick={handleAddNewClick}
+            className="flex items-center gap-2 w-full justify-center"
+            size="sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Subscription
+          </Button>
         </div>
-        <Button onClick={handleAddNewClick} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Add New Subscription
-        </Button>
       </div>
 
       {/* Active Subscriptions Section */}
@@ -575,30 +611,30 @@ const Dashboard = () => {
         <h3 className="text-lg font-semibold mb-4">
           All Subscriptions Summary
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-          <div className="bg-green-50 p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-green-600">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
+          <div className="bg-green-50 p-3 sm:p-4 rounded-lg border">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">
               {activeSubscriptions?.length}
             </div>
-            <div className="text-sm text-green-800">Active</div>
+            <div className="text-xs sm:text-sm text-green-800">Active</div>
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-yellow-600">
+          <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg border">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">
               {expiredSubscriptions?.length}
             </div>
-            <div className="text-sm text-yellow-800">Expired</div>
+            <div className="text-xs sm:text-sm text-yellow-800">Expired</div>
           </div>
-          <div className="bg-red-50 p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="bg-red-50 p-3 sm:p-4 rounded-lg border">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">
               {cancelledSubscriptions?.length}
             </div>
-            <div className="text-sm text-red-800">Cancelled</div>
+            <div className="text-xs sm:text-sm text-red-800">Cancelled</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">
               {subscriptions?.length}
             </div>
-            <div className="text-sm text-blue-800">Total</div>
+            <div className="text-xs sm:text-sm text-blue-800">Total</div>
           </div>
         </div>
       </section>

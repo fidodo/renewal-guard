@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { SidebarThemeToggle } from "./SideBarThemeToggle";
-
 import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
 import { clearUser } from "../../store/slices/userSlice";

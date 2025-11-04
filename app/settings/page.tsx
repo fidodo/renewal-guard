@@ -23,8 +23,7 @@ import { LandingNavbar } from "../components/LandingNavbar";
 import Sidebar from "../components/layout/Sidebar";
 import { setSetting, updateSetting } from "../store/slices/settingSlice";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
-
-import { checkAuthStatus } from "../helper/helper";
+import { MobileBottomNav } from "../components/layout/MobileBottomNav";
 
 // Define the settings type
 interface UserSettings {
@@ -83,12 +82,6 @@ export default function SettingsPage() {
     const fetchSettings = async () => {
       try {
         const token = localStorage.getItem("token");
-        const refreshToken = localStorage.getItem("refreshToken");
-
-        console.log("🔐 Initial auth state:", {
-          hasToken: !!token,
-          hasRefreshToken: !!refreshToken,
-        });
 
         if (!token) {
           console.log("❌ No token found, using localStorage settings");
@@ -173,10 +166,6 @@ export default function SettingsPage() {
   };
 
   const handleSaveSettings = async () => {
-    console.log("settings:", settings);
-
-    const authStatus = checkAuthStatus();
-    console.log(authStatus);
     setIsSaving(true);
 
     try {
@@ -208,7 +197,6 @@ export default function SettingsPage() {
       let result;
       try {
         result = JSON.parse(responseText);
-        console.log("📥 Parsed response:", result);
       } catch {
         result = { message: responseText };
       }
@@ -218,12 +206,10 @@ export default function SettingsPage() {
           ? { ...result.data }
           : { ...settings };
 
-        console.log("🔄 Updating all states with:", updatedSettings);
-
         // ✅ Update all three states:
-        dispatch(setSetting(updatedSettings)); // Redux
-        localStorage.setItem("userSettings", JSON.stringify(updatedSettings)); // localStorage
-        setLocalSettings(updatedSettings); // Local state
+        dispatch(setSetting(updatedSettings));
+        localStorage.setItem("userSettings", JSON.stringify(updatedSettings));
+        setLocalSettings(updatedSettings);
 
         alert("Settings saved successfully!");
       } else {
@@ -231,7 +217,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      // Fallback to localStorage
+
       localStorage.setItem("userSettings", JSON.stringify(settings));
       dispatch(updateSetting(settings));
       alert("Settings saved locally (offline mode)");
@@ -251,6 +237,10 @@ export default function SettingsPage() {
     setLocalSettings(newSettings);
   };
 
+  const clearError = () => {
+    setError(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -268,119 +258,121 @@ export default function SettingsPage() {
     );
   }
 
-  const clearError = () => {
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <LandingNavbar />
       <div className="flex flex-1">
-        <Sidebar />
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
-            <div className="flex items-center">
-              <svg
-                className="w-5 h-5 text-red-500 mr-2"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-red-800">{error}</span>
+        <div className="hidden lg:block">
+          <Sidebar />
+        </div>
+
+        <div className="flex-1 w-full lg:ml-0 pb-16 lg:pb-0">
+          <div className="p-4 sm:p-6 flex-1">
+            {/* Error Alert */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-red-500 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-red-800">{error}</span>
+                </div>
+                <button
+                  onClick={clearError}
+                  className="text-red-500 hover:text-red-700 focus:outline-none"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {/* Header */}
+            <div className="mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your account preferences
+              </p>
             </div>
-            <button
-              onClick={clearError}
-              className="text-red-500 hover:text-red-700 focus:outline-none"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        )}
-        <div className="ml-0 md:ml-32 lg:ml-64 p-6 flex-1">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">
-              Manage your account preferences
-            </p>
-          </div>
 
-          <div className="space-y-6">
-            {/* Notification Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>
-                  Configure how you want to receive reminders
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="email-notifications">
-                      Email Notifications
-                    </Label>
-                    <div className="text-sm text-muted-foreground">
-                      Receive renewal reminders via email
+            <div className="space-y-6">
+              {/* Notification Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Settings</CardTitle>
+                  <CardDescription>
+                    Configure how you want to receive reminders
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5 flex-1">
+                      <Label htmlFor="email-notifications">
+                        Email Notifications
+                      </Label>
+                      <div className="text-sm text-muted-foreground">
+                        Receive renewal reminders via email
+                      </div>
                     </div>
-                  </div>
-                  <Switch
-                    id="email-notifications"
-                    checked={settings.emailNotifications}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange("emailNotifications", checked)
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sms-reminders">SMS Reminders</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Get text message reminders (requires phone number)
-                    </div>
-                  </div>
-                  <Switch
-                    id="sms-reminders"
-                    checked={settings.smsReminders}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange("smsReminders", checked)
-                    }
-                  />
-                </div>
-
-                {settings.smsReminders && (
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+1 (555) 123-4567"
-                      value={settings.phoneNumber}
-                      onChange={(e) =>
-                        handleSettingChange("phoneNumber", e.target.value)
+                    <Switch
+                      id="email-notifications"
+                      checked={settings.emailNotifications}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange("emailNotifications", checked)
                       }
                     />
                   </div>
-                )}
 
-                {(!settings.smsReminders || !settings.emailNotifications) && (
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5 flex-1">
+                      <Label htmlFor="sms-reminders">SMS Reminders</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Get text message reminders
+                      </div>
+                    </div>
+                    <Switch
+                      id="sms-reminders"
+                      checked={settings.smsReminders}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange("smsReminders", checked)
+                      }
+                    />
+                  </div>
+
+                  {settings.smsReminders && (
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        value={settings.phoneNumber}
+                        onChange={(e) =>
+                          handleSettingChange("phoneNumber", e.target.value)
+                        }
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>Reminder Schedule</Label>
                     <div className="flex gap-2 flex-wrap">
@@ -388,18 +380,17 @@ export default function SettingsPage() {
                         const isDisabled =
                           !settings.smsReminders &&
                           !settings.emailNotifications;
+                        const isSelected = settings.reminderDays.includes(days);
 
                         return (
                           <Badge
                             key={days}
-                            variant={
-                              settings.reminderDays.includes(days)
-                                ? "default"
-                                : "outline"
-                            }
-                            className={`cursor-pointer ${
-                              isDisabled ? "opacity-50 pointer-events-none" : ""
-                            }`}
+                            variant={isSelected ? "default" : "outline"}
+                            className={`cursor-pointer transition-colors ${
+                              isDisabled
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-primary/80"
+                            } ${isSelected ? "bg-primary" : ""}`}
                             onClick={() =>
                               !isDisabled && handleReminderDaysChange(days)
                             }
@@ -409,114 +400,132 @@ export default function SettingsPage() {
                         );
                       })}
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enable notifications to set reminder schedule
+                    </p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Display Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Display Settings</CardTitle>
-                <CardDescription>
-                  Customize how information is displayed
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Default Currency</Label>
-                  <Select
-                    value={settings.currency}
-                    onValueChange={(value) =>
-                      handleSettingChange("currency", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">US Dollar ($)</SelectItem>
-                      <SelectItem value="EUR">Euro (€)</SelectItem>
-                      <SelectItem value="GBP">British Pound (£)</SelectItem>
-                      <SelectItem value="CAD">Canadian Dollar (C$)</SelectItem>
-                      <SelectItem value="AUD">
-                        Australian Dollar (A$)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Display Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Display Settings</CardTitle>
+                  <CardDescription>
+                    Customize how information is displayed
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Default Currency</Label>
+                    <Select
+                      value={settings.currency}
+                      onValueChange={(value) =>
+                        handleSettingChange("currency", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">US Dollar ($)</SelectItem>
+                        <SelectItem value="EUR">Euro (€)</SelectItem>
+                        <SelectItem value="GBP">British Pound (£)</SelectItem>
+                        <SelectItem value="CAD">
+                          Canadian Dollar (C$)
+                        </SelectItem>
+                        <SelectItem value="AUD">
+                          Australian Dollar (A$)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="date-format">Date Format</Label>
-                  <Select
-                    value={settings.dateFormat}
-                    onValueChange={(value) =>
-                      handleSettingChange("dateFormat", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="date-format">Date Format</Label>
+                    <Select
+                      value={settings.dateFormat}
+                      onValueChange={(value) =>
+                        handleSettingChange("dateFormat", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Privacy Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Privacy & Data</CardTitle>
-                <CardDescription>Control your data preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="data-sharing">Anonymous Data Sharing</Label>
-                    <div className="text-sm text-muted-foreground">
-                      Help improve Renewal Guard by sharing anonymous usage data
+              {/* Privacy Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Privacy & Data</CardTitle>
+                  <CardDescription>
+                    Control your data preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5 flex-1">
+                      <Label htmlFor="data-sharing">
+                        Anonymous Data Sharing
+                      </Label>
+                      <div className="text-sm text-muted-foreground">
+                        Help improve Renewal Guard by sharing anonymous usage
+                        data
+                      </div>
                     </div>
+                    <Switch
+                      id="data-sharing"
+                      checked={settings.dataSharing}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange("dataSharing", checked)
+                      }
+                    />
                   </div>
-                  <Switch
-                    id="data-sharing"
-                    checked={settings.dataSharing}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange("dataSharing", checked)
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Account Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Actions</CardTitle>
-                <CardDescription>Manage your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <Button variant="outline">Export Data</Button>
-                  <Button variant="outline" className="text-destructive">
-                    Delete Account
-                  </Button>
-                  <Button
-                    onClick={handleSaveSettings}
-                    className="ml-auto"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save Settings"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Account Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Actions</CardTitle>
+                  <CardDescription>Manage your account</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <Button variant="outline" className="flex-1 sm:flex-none">
+                      Export Data
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 sm:flex-none text-destructive"
+                    >
+                      Delete Account
+                    </Button>
+                    <Button
+                      onClick={handleSaveSettings}
+                      className="flex-1 sm:flex-none sm:ml-auto"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Save Settings"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }
