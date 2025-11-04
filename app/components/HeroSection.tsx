@@ -29,9 +29,6 @@ export const HeroSection = () => {
           </div>
         </div>
       </div>
-      <div className="text-red-500 sm:text-blue-500 md:text-green-500 p-4">
-        TEST: This text should change color on different screen sizes
-      </div>
     </section>
   );
 };
