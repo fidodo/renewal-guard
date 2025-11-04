@@ -49,7 +49,7 @@ export default function Help() {
   ];
 
   return (
-    <div className="ml-64 p-6">
+    <div className="ml-0 md:ml-32 lg:ml-64 p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Help & Support</h1>
         <p className="text-muted-foreground">Get help with Renewal Guard</p>

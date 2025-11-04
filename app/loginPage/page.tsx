@@ -195,7 +195,7 @@ async function loginAction(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  // Enhanced validation
+  // Validation (keep your existing code)
   if (!email || !password) {
     return {
       ...prevState,
@@ -205,19 +205,7 @@ async function loginAction(
     };
   }
 
-  // Email format validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return {
-      ...prevState,
-      error: "Please enter a valid email address",
-      isLoading: false,
-      success: false,
-    };
-  }
-
   try {
-    // Send sign-in request to backend API
     const response = await fetchWithAuth(`/api/v1/auth/sign-in`, {
       method: "POST",
       headers: {
@@ -227,42 +215,43 @@ async function loginAction(
       credentials: "include",
     });
 
-    // Handle non-JSON responses
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      throw new Error("Server returned non-JSON response");
-    }
-
-    const data: ApiResponse = await response.json();
+    const data = await response.json();
     console.log("Login response data:", data);
-    if (!response.ok) {
-      // Handle HTTP errors with server message
+
+    // Handle specific error cases
+    if (!response.ok || !data.success) {
+      let errorMessage = data.error || data.message || "Login failed";
+
+      // User-friendly error messages
+      if (data.error === "User not found") {
+        errorMessage =
+          "No account found with this email. Please sign up first.";
+      } else if (data.error === "Invalid credentials") {
+        errorMessage = "Incorrect password. Please try again.";
+      }
+
       return {
         ...prevState,
-        error:
-          data.message || data.error || `Login failed (${response.status})`,
+        error: errorMessage,
         isLoading: false,
         success: false,
       };
     }
 
-    if (!data.success) {
-      return {
-        ...prevState,
-        error: data.message || data.error || "Login failed",
-        isLoading: false,
-        success: false,
-      };
-    }
-
+    // Success case
     if (data.data?.token && data.data?.user) {
-      // Save to localStorage with error handling
       try {
-        localStorage.setItem("refreshToken", data.data.refreshToken);
+        localStorage.setItem("refreshToken", data.data.refreshToken || "");
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
-      } catch (storageError) {
-        console.error("LocalStorage error:", storageError);
+
+        return {
+          error: "",
+          isLoading: false,
+          success: true,
+        };
+      } catch (error) {
+        console.log("LocalStorage error:", error);
         return {
           ...prevState,
           error: "Failed to save login data. Please try again.",
@@ -270,12 +259,6 @@ async function loginAction(
           success: false,
         };
       }
-
-      return {
-        error: "",
-        isLoading: false,
-        success: true,
-      };
     } else {
       return {
         ...prevState,

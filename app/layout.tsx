@@ -5,6 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Renewal Reminder",
   description: "Renewal Guard Application",
+  viewport: "width=device-width, initial-scale=1.0",
 };
 
 export default function RootLayout({

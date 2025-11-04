@@ -257,7 +257,7 @@ export default function SettingsPage() {
         <LandingNavbar />
         <div className="flex flex-1">
           <Sidebar />
-          <div className="ml-64 p-6 flex items-center justify-center flex-1">
+          <div className="ml-0 md:ml-32 lg:ml-64 p-6 flex items-center justify-center flex-1">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
               <p className="mt-4 text-muted-foreground">Loading settings...</p>
@@ -313,7 +313,7 @@ export default function SettingsPage() {
             </button>
           </div>
         )}
-        <div className="ml-64 p-6 flex-1">
+        <div className="ml-0 md:ml-32 lg:ml-64 p-6 flex-1">
           <div className="mb-6">
             <h1 className="text-3xl font-bold">Settings</h1>
             <p className="text-muted-foreground">

@@ -64,7 +64,7 @@ function Analytics() {
 
   if (isLoading) {
     return (
-      <div className="ml-64 p-6">
+      <div className="ml-0 md:ml-32 lg:ml-64 p-6">
         <div className="flex items-center justify-center h-64">
           <p className="text-lg">Loading analytics...</p>
         </div>
@@ -74,7 +74,7 @@ function Analytics() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="ml-64 p-6">
+      <div className="ml-0 md:ml-32 lg:ml-64 p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="text-muted-foreground">
@@ -91,7 +91,7 @@ function Analytics() {
     );
   }
   return (
-    <div className="ml-64 p-6">
+    <div className="ml-0 md:ml-32 lg:ml-64 p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Analytics</h1>
         <p className="text-muted-foreground">
