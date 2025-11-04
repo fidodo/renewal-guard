@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { SidebarThemeToggle } from "./SideBarThemeToggle";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "../../../backend/config/env";
+
 import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
 import { clearUser } from "../../store/slices/userSlice";
@@ -27,7 +27,6 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
-  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -45,7 +44,7 @@ const Sidebar = () => {
 
       // Call logout API if tokens exist
       if (token) {
-        await fetch(`${API_BASE_URL}/api/v1/auth/sign-out`, {
+        await fetch(`/api/v1/auth/sign-out`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -68,7 +67,6 @@ const Sidebar = () => {
       // Redirect to home page
       router.push("/");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, router, isLoggingOut]);
 
   return (

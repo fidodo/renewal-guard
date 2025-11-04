@@ -1,8 +1,5 @@
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "../backend/config/env.js";
-
-const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 const options = {
   definition: {
@@ -14,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: `${API_BASE_URL}/api`,
+        url: "http://localhost:5000/api",
       },
     ],
     components: {

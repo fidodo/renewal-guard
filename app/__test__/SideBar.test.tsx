@@ -3,9 +3,6 @@ import { render, screen, fireEvent, waitFor } from "../../test-utils";
 import "@testing-library/jest-dom";
 import Sidebar from "../components/layout/Sidebar";
 import { useAuth } from "../hooks/useAuth";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "@/backend/config/env";
-
-const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -168,7 +165,7 @@ describe("Sidebar", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        `${API_BASE_URL}/api/v1/auth/sign-out`,
+        `/api/v1/auth/sign-out`,
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

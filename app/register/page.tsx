@@ -5,7 +5,6 @@ import Link from "next/link";
 import { setUser } from "../store/slices/userSlice";
 import { useDispatch } from "react-redux";
 import { useActionState, useEffect } from "react";
-import { NEXT_PUBLIC_API_URL, SERVER_URL } from "../../backend/config/env";
 
 export interface User {
   id: string;
@@ -46,8 +45,6 @@ async function registerAction(
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
-
   // Basic validation
   if (!name || !email || !password) {
     return {
@@ -60,7 +57,7 @@ async function registerAction(
 
   try {
     // Send register request to backend API
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/sign-up`, {
+    const response = await fetch(`/api/v1/auth/sign-up`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

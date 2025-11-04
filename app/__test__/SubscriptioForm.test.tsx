@@ -2,9 +2,6 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "../../test-utils";
 import "@testing-library/jest-dom";
 import SubscriptionForm from "../components/dashboard/SubscriptionForm";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "@/backend/config/env";
-
-const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 // Mock the UI components
 jest.mock("@/components/ui/dialog", () => ({
@@ -285,7 +282,7 @@ describe("SubscriptionForm", () => {
 
     // Verify the API call
     expect(global.fetch).toHaveBeenCalledWith(
-      `${API_BASE_URL}/api/v1/subscriptions`,
+      `/api/v1/subscriptions`,
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({

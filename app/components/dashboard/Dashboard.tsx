@@ -8,14 +8,13 @@ import {
   setSubscriptions,
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
-import { NEXT_PUBLIC_API_URL, SERVER_URL } from "../../../backend/config/env";
+
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 import { Subscription } from "./SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { refreshAuthToken } from "@/app/hooks/refresh-token";
 
 const Dashboard = () => {
-  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
   const [showForm, setShowForm] = useState(false);
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
@@ -177,16 +176,13 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/subscriptions/user,`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/v1/subscriptions/user,`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       console.log("📊 Response status:", response.status);
 
@@ -199,16 +195,13 @@ const Dashboard = () => {
           // Retry the request with new token
           const newToken = localStorage.getItem("token");
           if (newToken) {
-            const retryResponse = await fetch(
-              `${API_BASE_URL}/api/v1/subscriptions/user`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${newToken}`,
-                },
-              }
-            );
+            const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
 
             if (retryResponse.ok) {
               const result = await retryResponse.json();
@@ -290,16 +283,13 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(
-        ` ${API_BASE_URL}/api/v1/subscriptions/${id}/cancel`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(` /api/v1/subscriptions/${id}/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       // Handle 401 - Token expired
       if (response.status === 401) {
@@ -309,7 +299,7 @@ const Dashboard = () => {
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(
-              `${API_BASE_URL}/api/v1/subscriptions/${id}/cancel`,
+              `/api/v1/subscriptions/${id}/cancel`,
               {
                 method: "PATCH",
                 headers: {
@@ -373,16 +363,13 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/subscriptions/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/v1/subscriptions/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       // Handle 401 - Token expired
       if (response.status === 401) {
@@ -391,16 +378,13 @@ const Dashboard = () => {
           // Retry with new token
           const newToken = localStorage.getItem("token");
           if (newToken) {
-            const retryResponse = await fetch(
-              `${API_BASE_URL}/api/v1/subscriptions/${id}`,
-              {
-                method: "DELETE",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${newToken}`,
-                },
-              }
-            );
+            const retryResponse = await fetch(`/api/v1/subscriptions/${id}`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
 
             if (retryResponse.ok) {
               const result = await retryResponse.json();

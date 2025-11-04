@@ -2,11 +2,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { setUser, clearUser } from "../store/slices/userSlice";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "../../backend/config/env";
 
 export const useAuth = () => {
-  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
-
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -45,7 +42,7 @@ export const useAuth = () => {
       try {
         console.log("🔄 Checking auth with token...");
         // ✅ Attempt to validate current token
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        const response = await fetch(`/api/v1/auth/me`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -140,7 +137,7 @@ export const useAuth = () => {
         retryCount.current += 1;
         console.log(`🔄 Refresh attempt ${retryCount.current}/${maxRetries}`);
 
-        const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
+        const res = await fetch(`/api/v1/auth/refresh-token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refreshToken }),
@@ -177,7 +174,7 @@ export const useAuth = () => {
 
           // ✅ Retry original request with new token
           console.log("🔄 Retrying auth check with new token");
-          const retry = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+          const retry = await fetch(`/api/v1/auth/me`, {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${data.data.token}`,

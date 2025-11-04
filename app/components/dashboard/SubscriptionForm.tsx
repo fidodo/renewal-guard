@@ -26,7 +26,6 @@ import {
   setSubscriptions,
 } from "@/app/store/slices/subscriptionSlice";
 import { AppDispatch } from "@/app/store/store";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "@/backend/config/env";
 
 // Pure subscription data (from backend / DB)
 export interface Subscription {
@@ -88,8 +87,6 @@ export interface SubscriptionFormProps {
   mode?: "create" | "edit";
   onSuccess?: () => void;
 }
-
-const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 const SubscriptionForm = ({
   onSuccess,
@@ -167,20 +164,17 @@ const SubscriptionForm = ({
 
       if (mode === "edit" && subscription) {
         // Update existing subscription
-        response = await fetch(
-          `${API_BASE_URL}/api/v1/subscriptions/${subscriptionId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(subscriptionData),
-          }
-        );
+        response = await fetch(`/api/v1/subscriptions/${subscriptionId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(subscriptionData),
+        });
         console.log("response", response);
       } else {
         // Create new subscription
-        response = await fetch(`${API_BASE_URL}/api/v1/subscriptions`, {
+        response = await fetch(`/api/v1/subscriptions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -228,7 +222,7 @@ const SubscriptionForm = ({
     token: string
   ) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/subscriptions`, {
+      const response = await fetch(`/api/v1/subscriptions`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

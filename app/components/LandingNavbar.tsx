@@ -11,7 +11,6 @@ import ThemeToggle from "./ThemeToggle";
 import { SearchModal } from "./SearchModal";
 import { useDebounce } from "../hooks/useDebounce";
 import { useAppSelector } from "../hooks/redux";
-import { NEXT_PUBLIC_API_URL, SERVER_URL } from "../../backend/config/env";
 
 // Search types
 export type SearchType = "all" | "subscription" | "service" | "price" | "date";
@@ -44,8 +43,6 @@ export type SearchResult = {
 };
 
 export const LandingNavbar = () => {
-  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
-
   const isLoading = useAppSelector((state) => state.subscription.loading);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -81,7 +78,7 @@ export const LandingNavbar = () => {
           filters: filter,
         };
         console.log("🔍 Search request:", body);
-        const response = await fetch(`${API_BASE_URL}/api/v1/search/global`, {
+        const response = await fetch(`/api/v1/search/global`, {
           method: "POST",
           body: JSON.stringify(body),
         });
@@ -101,7 +98,7 @@ export const LandingNavbar = () => {
         setIsSearching(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     []
   );
 
@@ -131,7 +128,7 @@ export const LandingNavbar = () => {
 
       // Call logout API if tokens exist
       if (token) {
-        await fetch(`${API_BASE_URL}/api/v1/auth/sign-out`, {
+        await fetch(`/api/v1/auth/sign-out`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -156,7 +153,6 @@ export const LandingNavbar = () => {
       // Redirect to home page
       router.push("/");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, router]);
 
   const handleResultClick = (result: SearchResult) => {

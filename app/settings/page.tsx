@@ -23,7 +23,7 @@ import { LandingNavbar } from "../components/LandingNavbar";
 import Sidebar from "../components/layout/Sidebar";
 import { setSetting, updateSetting } from "../store/slices/settingSlice";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
-import { SERVER_URL, NEXT_PUBLIC_API_URL } from "@/backend/config/env";
+
 import { checkAuthStatus } from "../helper/helper";
 
 // Define the settings type
@@ -51,8 +51,6 @@ const defaultSettings: UserSettings = {
   dataSharing: false,
   phoneNumber: "",
 };
-
-const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 export default function SettingsPage() {
   const dispatch = useAppDispatch();
@@ -100,7 +98,7 @@ export default function SettingsPage() {
 
         console.log("🔄 Fetching settings from API...");
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/settings`);
+        const response = await fetch(`/api/v1/settings`);
 
         console.log("🔍 Settings API response status:", response.status);
         const errorMessage = `Failed to fetch settings: ${response.status}`;
@@ -196,16 +194,13 @@ export default function SettingsPage() {
         return;
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/settings/${userId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(settings),
-        }
-      );
+      const response = await fetch(`/api/v1/settings/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+      });
 
       const responseText = await response.text();
       console.log("Raw response:", responseText);
