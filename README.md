@@ -147,6 +147,12 @@ npm install
 npm run dev
 ```
 
+4. Run the test
+   
+```sh
+npm run test
+```
+
 ## ⚙️ Environment Setup
 
 1. Copy the example environment file and add correct .env credentials:
