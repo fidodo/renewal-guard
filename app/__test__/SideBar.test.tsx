@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor } from "../../test-utils";
 import "@testing-library/jest-dom";
 import Sidebar from "../components/layout/Sidebar";
 import { useAuth } from "../hooks/useAuth";
+import { SERVER_URL, NEXT_PUBLIC_API_URL } from "@/backend/config/env";
+
+const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -64,25 +67,6 @@ jest.mock("lucide-react", () => ({
   CreditCard: () => <span data-testid="subscriptions-icon">CreditCard</span>,
 }));
 
-// describe("Sidebar", () => {
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//     mockUsePathname.mockReturnValue("/dashboard");
-
-//     // Mock localStorage
-//     Object.defineProperty(window, "localStorage", {
-//       value: {
-//         getItem: jest.fn(),
-//         setItem: jest.fn(),
-//         removeItem: jest.fn(),
-//         clear: jest.fn(),
-//       },
-//       writable: true,
-//     });
-
-//     // Mock fetch
-//     global.fetch = jest.fn();
-//   });
 describe("Sidebar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -184,7 +168,7 @@ describe("Sidebar", () => {
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        "http://localhost:5000/api/v1/auth/sign-out",
+        `${API_BASE_URL}/api/v1/auth/sign-out`,
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
