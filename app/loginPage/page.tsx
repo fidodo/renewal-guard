@@ -243,7 +243,7 @@ async function loginAction(
     }
 
     const data: ApiResponse = await response.json();
-
+    console.log("Login response data:", data);
     if (!response.ok) {
       // Handle HTTP errors with server message
       return {
