@@ -176,7 +176,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(`/api/v1/subscriptions/user,`, {
+      const response = await fetch(`/api/v1/subscriptions/user`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
