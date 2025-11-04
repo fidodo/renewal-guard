@@ -8,13 +8,14 @@ import {
   setSubscriptions,
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
-
+import { NEXT_PUBLIC_API_URL, SERVER_URL } from "../../../backend/config/env";
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 import { Subscription } from "./SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { refreshAuthToken } from "@/app/hooks/refresh-token";
 
 const Dashboard = () => {
+  const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
   const [showForm, setShowForm] = useState(false);
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
@@ -177,7 +178,7 @@ const Dashboard = () => {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/v1/subscriptions/user",
+        `${API_BASE_URL}/api/v1/subscriptions/user,`,
         {
           method: "GET",
           headers: {
@@ -199,7 +200,7 @@ const Dashboard = () => {
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(
-              "http://localhost:5000/api/v1/subscriptions/user",
+              `${API_BASE_URL}/api/v1/subscriptions/user`,
               {
                 method: "GET",
                 headers: {
@@ -290,7 +291,7 @@ const Dashboard = () => {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/subscriptions/${id}/cancel`,
+        ` ${API_BASE_URL}/api/v1/subscriptions/${id}/cancel`,
         {
           method: "PATCH",
           headers: {
@@ -308,7 +309,7 @@ const Dashboard = () => {
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(
-              `http://localhost:5000/api/v1/subscriptions/${id}/cancel`,
+              `${API_BASE_URL}/api/v1/subscriptions/${id}/cancel`,
               {
                 method: "PATCH",
                 headers: {
@@ -373,7 +374,7 @@ const Dashboard = () => {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/subscriptions/${id}`,
+        `${API_BASE_URL}/api/v1/subscriptions/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -391,7 +392,7 @@ const Dashboard = () => {
           const newToken = localStorage.getItem("token");
           if (newToken) {
             const retryResponse = await fetch(
-              `http://localhost:5000/api/v1/subscriptions/${id}`,
+              `${API_BASE_URL}/api/v1/subscriptions/${id}`,
               {
                 method: "DELETE",
                 headers: {

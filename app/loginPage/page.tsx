@@ -5,6 +5,7 @@ import Link from "next/link";
 import { setUser } from "../store/slices/userSlice";
 import { useDispatch } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
+import { NEXT_PUBLIC_API_URL, SERVER_URL } from "../../backend/config/env";
 
 interface RefreshTokenResponse {
   success: boolean;
@@ -12,6 +13,8 @@ interface RefreshTokenResponse {
   refreshToken?: string;
   requiresReauth?: boolean;
 }
+
+const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
 
 // State to prevent multiple simultaneous refresh attempts
 let refreshInProgress: Promise<boolean> | null = null;
@@ -66,7 +69,7 @@ const refreshAuthToken = async (): Promise<boolean> => {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/v1/auth/refresh-token",
+        `${API_BASE_URL}/api/v1/auth/refresh-token`,
         {
           method: "POST",
           headers: {
@@ -222,7 +225,7 @@ async function loginAction(
   try {
     // Send sign-in request to backend API
     const response = await fetchWithAuth(
-      "http://localhost:5000/api/v1/auth/sign-in",
+      `${API_BASE_URL}/api/v1/auth/sign-in`,
       {
         method: "POST",
         headers: {

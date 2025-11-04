@@ -1,4 +1,9 @@
 // Add this enhanced refreshAuthToken function with detailed logging
+"use client";
+import { NEXT_PUBLIC_API_URL, SERVER_URL } from "@/backend/config/env";
+
+const API_BASE_URL = NEXT_PUBLIC_API_URL || SERVER_URL;
+
 export const refreshAuthToken = async (): Promise<boolean> => {
   try {
     console.log("🔄 Starting token refresh...");
@@ -12,16 +17,13 @@ export const refreshAuthToken = async (): Promise<boolean> => {
     }
 
     console.log("🌐 Sending refresh request...");
-    const response = await fetch(
-      "http://localhost:5000/api/v1/auth/refresh-token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
 
     console.log("📊 Refresh response status:", response.status);
     console.log("📊 Refresh response ok:", response.ok);
