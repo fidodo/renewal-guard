@@ -5,7 +5,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <LandingNavbar />
-      <main>
+      <main className="ml-0 ">
+        {" "}
+        {/* Override the margin here */}
         <HeroSection />
       </main>
     </div>
