@@ -8,7 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 
 interface RefreshTokenResponse {
   success: boolean;
-  accessToken?: string;
+  token?: string;
   refreshToken?: string;
   requiresReauth?: boolean;
 }
@@ -18,7 +18,7 @@ let refreshInProgress: Promise<boolean> | null = null;
 
 // Clear tokens and prompt user to re-login
 const promptReauthentication = (): void => {
-  // Clear all auth tokens
+  // Clear all auth tokensi do not have
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
 
@@ -38,8 +38,8 @@ const handleInvalidRefreshToken = (): void => {
   promptReauthentication();
 };
 
-const setTokens = (accessToken: string, refreshToken: string): void => {
-  localStorage.setItem("token", accessToken);
+const setTokens = (token: string, refreshToken: string): void => {
+  localStorage.setItem("token", token);
   localStorage.setItem("refreshToken", refreshToken);
 };
 
@@ -86,15 +86,15 @@ const refreshAuthToken = async (): Promise<boolean> => {
       }
 
       const data: RefreshTokenResponse = await response.json();
-
+      console.log("Refresh data:", data);
       // Server can indicate that re-authentication is required
       if (data.requiresReauth) {
         promptReauthentication();
         return false;
       }
 
-      if (data.success && data.accessToken && data.refreshToken) {
-        setTokens(data.accessToken, data.refreshToken);
+      if (data.success && data.token && data.refreshToken) {
+        setTokens(data.token, data.refreshToken);
         console.log("Token refreshed successfully");
         return true;
       }

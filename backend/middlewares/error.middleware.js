@@ -31,8 +31,12 @@ const errorMiddleware = (err, req, res, next) => {
     }
 
     if (err.name === "TokenExpiredError") {
+      const isRefreshToken = err.stack?.includes("refreshAuthToken");
       error.statusCode = 401;
-      error.code = "TOKEN_EXPIRED";
+      error.code = isRefreshToken ? "REFRESH_TOKEN_EXPIRED" : "TOKEN_EXPIRED";
+      error.message = isRefreshToken
+        ? "Refresh token expired, please login again"
+        : "Token expired";
     }
     res.status(error.statusCode || 500).json({
       success: false,

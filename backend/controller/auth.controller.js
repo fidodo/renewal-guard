@@ -207,22 +207,37 @@ export const userMe = async (req, res, next) => {
 export const refreshAuthToken = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
-    console.log(refreshToken);
 
     if (!refreshToken) {
       return res.status(401).json({
         success: false,
-        message: "No refresh token provided, authorization denied",
+        message: "No refresh token provided",
       });
     }
 
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET_KEY
-    );
+    const blacklisted = await TokenBlacklist.findOne({ token: refreshToken });
+    if (blacklisted) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token is invalid",
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET_KEY);
+    } catch (jwtError) {
+      if (jwtError.name === "TokenExpiredError") {
+        return res.status(401).json({
+          success: false,
+          message: "Refresh token expired, please login again",
+          code: "REFRESH_TOKEN_EXPIRED",
+        });
+      }
+      throw jwtError;
+    }
 
     const user = await User.findById(decoded.id).select("-password");
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -230,11 +245,23 @@ export const refreshAuthToken = async (req, res, next) => {
       });
     }
 
-    const token = jwt.sign(
+    const newAccessToken = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET_KEY,
       { expiresIn: process.env.JWT_EXPIRATION_TIME }
     );
+
+    const newRefreshToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_REFRESH_SECRET_KEY,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRATION_TIME }
+    );
+
+    const decodedOldRefresh = jwt.decode(refreshToken);
+    await TokenBlacklist.create({
+      token: refreshToken,
+      expiresAt: new Date(decodedOldRefresh.exp * 1000),
+    });
 
     res.status(200).json({
       success: true,
@@ -245,7 +272,8 @@ export const refreshAuthToken = async (req, res, next) => {
           name: user.name,
           email: user.email,
         },
-        token,
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
       },
     });
   } catch (error) {
