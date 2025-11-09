@@ -69,7 +69,7 @@ export const HeroSection = () => {
 
           <p className="mt-4 text-sm text-muted-foreground">
             Or{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/loginPage" className="text-primary hover:underline">
               sign in to your account
             </Link>
           </p>
