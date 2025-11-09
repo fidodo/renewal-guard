@@ -1,10 +1,10 @@
 // app/auth/success/page.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function AuthSuccess() {
+function AuthSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -42,5 +42,25 @@ export default function AuthSuccess() {
         <p>Please wait while we sign you in.</p>
       </div>
     </div>
+  );
+}
+
+// Loading component for suspense
+function AuthSuccessLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">Loading...</h2>
+        <p>Please wait while we complete authentication.</p>
+      </div>
+    </div>
+  );
+}
+
+export default function AuthSuccess() {
+  return (
+    <Suspense fallback={<AuthSuccessLoading />}>
+      <AuthSuccessContent />
+    </Suspense>
   );
 }
