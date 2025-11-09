@@ -12,21 +12,23 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "express": "^5.1.0",
-    "mongoose": "^8.18.1",
-    "cors": "^2.8.5",
+    "@arcjet/node": "^1.0.0-beta.10",
+    "@upstash/workflow": "^0.2.19",
     "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
     "cookie-parser": "~1.4.4",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.1",
+    "nodemailer": "^7.0.10",
+    "passport-google-oauth20": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "twilio": "^5.9.0",
-    "nodemailer": "^7.0.10",
-    "@arcjet/node": "^1.0.0-beta.10",
-    "@upstash/workflow": "^0.2.19"
+    "twilio": "^5.9.0"
   },
   "devDependencies": {
+    "@types/passport-google-oauth20": "^2.0.17",
     "nodemon": "^3.1.10"
   }
 }
