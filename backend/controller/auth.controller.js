@@ -1,8 +1,132 @@
 import mongoose from "mongoose";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import TokenBlacklist from "../models/tokenBlacklist.model.js";
+
+// ==================== GOOGLE OAUTH ====================
+
+// Google OAuth Strategy
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/v1/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
+
+        if (user) {
+          // Update tokens if they exist (for API access scenarios)
+          user.googleAccessToken = accessToken;
+          if (refreshToken) user.googleRefreshToken = refreshToken;
+          await user.save();
+          return done(null, user);
+        }
+
+        user = await User.findOne({ email: profile.emails[0].value });
+
+        if (user) {
+          user.googleId = profile.id;
+          user.googleAccessToken = accessToken;
+          if (refreshToken) user.googleRefreshToken = refreshToken;
+          await user.save();
+          return done(null, user);
+        }
+
+        const newUser = await User.create({
+          googleId: profile.id,
+          name: profile.displayName,
+          email: profile.emails[0].value,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken,
+          isVerified: true,
+          password: null,
+        });
+
+        return done(null, newUser);
+      } catch (error) {
+        return done(error, null);
+      }
+    }
+  )
+);
+
+// Serialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+// Deserialize user
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// Google OAuth Routes
+export const googleAuth = (req, res, next) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })(req, res, next);
+};
+
+export const googleAuthCallback = (req, res, next) => {
+  passport.authenticate(
+    "google",
+    {
+      session: false,
+      failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
+    },
+    async (err, user) => {
+      try {
+        if (err || !user) {
+          return res.redirect(
+            `${process.env.FRONTEND_URL}/login?error=auth_failed`
+          );
+        }
+
+        // Generate JWT tokens (same as your existing flow)
+        const token = jwt.sign(
+          { id: user._id, email: user.email },
+          process.env.JWT_SECRET_KEY,
+          { expiresIn: process.env.JWT_EXPIRATION_TIME }
+        );
+
+        const refreshToken = jwt.sign(
+          { id: user._id, email: user.email },
+          process.env.JWT_REFRESH_SECRET_KEY,
+          { expiresIn: process.env.JWT_REFRESH_EXPIRATION_TIME }
+        );
+
+        // Redirect to frontend with tokens
+        const redirectUrl = new URL(`${process.env.FRONTEND_URL}/auth/success`);
+        redirectUrl.searchParams.set("token", token);
+        redirectUrl.searchParams.set("refreshToken", refreshToken);
+        redirectUrl.searchParams.set(
+          "user",
+          JSON.stringify({
+            id: user._id,
+            name: user.name,
+            email: user.email,
+          })
+        );
+
+        res.redirect(redirectUrl.toString());
+      } catch (error) {
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+      }
+    }
+  )(req, res, next);
+};
 
 export const signUp = async (req, res, next) => {
   const session = await mongoose.startSession();
