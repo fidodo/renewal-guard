@@ -451,6 +451,11 @@ export default function LoginPage() {
               />
             </div>
           </div>
+          <div className="flex items-center justify-center pt-1 ">
+            <p className="text-amber-600">
+              * Password must be Minimum 6 characters long
+            </p>
+          </div>
 
           <div>
             <button
