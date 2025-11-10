@@ -16,12 +16,10 @@ export const ThemeInitializer = () => {
         if (savedTheme && (savedTheme === "light" || savedTheme === "dark")) {
           return savedTheme;
         }
-        // Fallback to system preference
-        return window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+        // Default to dark theme
+        return "dark";
       }
-      return "light";
+      return "dark"; // Default server-side theme
     };
 
     const initialTheme = getInitialTheme();
