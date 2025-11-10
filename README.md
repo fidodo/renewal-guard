@@ -43,6 +43,7 @@
 ![Product Screen Shot1][screenshot1]
 
 ![Product Screen Shot2][screenshot2]
+![Product Screen Shot3][screenshot3]
 
 🛡️ Renewal Guard
 
@@ -148,7 +149,7 @@ npm run dev
 ```
 
 4. Run the test
-   
+
 ```sh
 npm run test
 ```
@@ -405,6 +406,7 @@ Project Link: [https://github.com/fidodo/renewal-guard](https://github.com/fidod
 [linkedin-url]: https://www.linkedin.com/in/ayokunle-ogunfidodo-a862a0153/
 [screenshot1]: https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103408.png
 [screenshot2]: https://github.com/fidodo/renewal-guard/blob/main/assets/Screenshot%202025-10-29%20103336.png
+[screenshot3]: https://github.com/fidodo/renewal-guard/blob/main/assets/SampleEmail.jpg
 
 ### return
 
