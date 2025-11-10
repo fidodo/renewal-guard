@@ -160,7 +160,6 @@ const SubscriptionForm = ({
       let response;
 
       const subscriptionId = subscription?._id || subscription?.id;
-      console.log("subscriptionId", subscriptionId);
 
       if (mode === "edit" && subscription) {
         // Update existing subscription

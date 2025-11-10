@@ -10,31 +10,21 @@ export const createSubscription = async (req, res, next) => {
       ...req.body,
       user: req.user._id,
     });
+    console.log("subscription", subscription);
 
-    // Handle QStash workflow with error handling
-    let workflowRunId = null;
-    try {
-      const workflowResult = await workflowClient.trigger({
-        url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
-        body: { subscriptionId: subscription.id },
-        headers: { "Content-Type": "application/json" },
-        retries: 0,
-      });
-      workflowRunId = workflowResult.workflowRunId;
-    } catch (workflowError) {
-      console.warn(
-        "⚠️ QStash workflow failed (subscription still created):",
-        workflowError.message
-      );
-      // Continue without workflow - subscription is still created
-    }
+    const { workflowRunId } = await workflowClient.trigger({
+      url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
+      body: { subscriptionId: subscription.id },
+      headers: { "Content-Type": "application/json" },
+      retries: 0,
+    });
 
     res.status(201).json({
       success: true,
       message: "Subscription created successfully",
       data: {
         subscription,
-        ...(workflowRunId && { workflowRunId }),
+        workflowRunId,
       },
     });
   } catch (error) {
