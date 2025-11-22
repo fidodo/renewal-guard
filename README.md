@@ -142,13 +142,13 @@ git clone https://github.com/fidodo/renewal-guard.git
 npm install
 ```
 
-3. Start the development server
+4. Start the development server
 
 ```sh
 npm run dev
 ```
 
-4. Run the test
+5. Run the test
 
 ```sh
 npm run test
