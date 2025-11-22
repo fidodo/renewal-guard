@@ -143,7 +143,10 @@ const Dashboard = () => {
   const handleFormSuccess = () => {
     setShowForm(false);
     setEditingSubscription(null);
-    fetchSubscriptions();
+
+    setTimeout(() => {
+      fetchSubscriptions();
+    }, 100);
   };
 
   // Handle form cancel
@@ -152,7 +155,7 @@ const Dashboard = () => {
     setEditingSubscription(null);
   };
 
-  // Fetch subscriptions from backend on component mount
+  // Fetch subscriptions from backend
   const fetchSubscriptions = async () => {
     try {
       console.log("🔄 Fetching subscriptions...");
