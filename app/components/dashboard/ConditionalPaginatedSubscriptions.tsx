@@ -113,7 +113,8 @@ export const ConditionalPaginatedSubscriptions: React.FC<
               <button
                 onClick={handleToggleShowAll}
                 disabled={isLoading}
-                className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                className="flex items-center space-x-1 text-sm text-blue-400 hover:text-blue-300 bg-blue-900/30 hover:bg-blue-900/50 px-2 py-1 rounded disabled:opacity-50"
+                aria-label="View all hidden subscriptions"
               >
                 <span aria-label="display hidden subscriptions">View All</span>
                 <MoreHorizontal className="h-4 w-4" />
