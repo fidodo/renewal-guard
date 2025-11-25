@@ -265,7 +265,10 @@ export const LandingNavbar = () => {
 
                   {/* DESKTOP VERSION - Notifications & User Info */}
                   <div className="hidden lg:flex items-center space-x-3">
-                    <button className="relative p-2 hover:bg-accent rounded-md">
+                    <button
+                      className="relative p-2 hover:bg-accent rounded-md"
+                      aria-label="Notifications"
+                    >
                       <Bell className="h-5 w-5" />
                       <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center">
                         3
