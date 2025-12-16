@@ -62,7 +62,7 @@ Key Features:
 
 Tech Stack:
 
-Frontend: Next.js, TypeScript, SCSS
+Frontend: Next.js, TypeScript, Tailwind
 
 Backend: Node.js, Express
 
