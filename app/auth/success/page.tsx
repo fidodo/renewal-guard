@@ -13,19 +13,11 @@ function AuthSuccessContent() {
     const refreshToken = searchParams.get("refreshToken");
     const user = searchParams.get("user");
 
-    console.log("🔑 Token received:", !!token);
-    console.log("🔄 Refresh token received:", !!refreshToken);
-    console.log("👤 User data received:", user);
-
     if (token && refreshToken && user) {
-      // Store tokens in localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("user", user);
 
-      console.log("✅ Tokens stored in localStorage");
-
-      // Redirect to dashboard
       router.push("/dashboard");
     } else {
       console.error("❌ Missing tokens or user data");
@@ -45,7 +37,6 @@ function AuthSuccessContent() {
   );
 }
 
-// Loading component for suspense
 function AuthSuccessLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center">

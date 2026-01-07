@@ -97,16 +97,10 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {/* Bottom buttons - compact design */}
       <div className="space-y-3 mt-auto">
-        {/* Theme Toggle Button */}
-
         <SidebarThemeToggle />
 
-        {/* Logout Button */}
-        {/* Authentication Buttons */}
         {isAuthenticated ? (
-          // Logout Button for authenticated users
           <Button
             variant="ghost"
             onClick={handleLogout}

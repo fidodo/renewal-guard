@@ -23,15 +23,12 @@ export const sendReminders = serve(async (context) => {
   console.log("Renewal date:", renewalDate);
 
   if (renewalDate.isBefore(dayjs())) {
-    console.log(
-      `Renewal date has already passed for ${subscriptionId}. No reminder needed.`
-    );
     return;
   }
 
   for (const daysBefore of REMINDERS) {
     const reminderDate = renewalDate.subtract(daysBefore, "day");
-    console.log(`Reminder date for ${daysBefore} days:`, reminderDate);
+
     if (reminderDate.isAfter(dayjs())) {
       await sleepUntilReminder(
         context,
@@ -39,7 +36,7 @@ export const sendReminders = serve(async (context) => {
         reminderDate
       );
     }
-    console.log(dayjs().isSame(reminderDate, "day"));
+
     if (dayjs().isSame(reminderDate, "day")) {
       await triggerReminder(
         context,
@@ -57,7 +54,6 @@ const fetchSubscription = async (context, subscriptionId) => {
 };
 
 const sleepUntilReminder = async (context, label, date) => {
-  // console.log(`Waiting for ${label}... reminder at${date}`);
   await context.sleepUntil(label, date.toDate());
   const now = dayjs();
   const delay = date.diff(now, "millisecond");
@@ -68,8 +64,6 @@ const sleepUntilReminder = async (context, label, date) => {
 
 const triggerReminder = async (context, label, subscription) => {
   return await context.run(label, async () => {
-    console.log(`triggering ${label} for ${subscription.user.email}`);
-    console.log("Subscription details trigger:", subscription);
     await sendReminderEmail({
       to: subscription.user.email,
       type: label,

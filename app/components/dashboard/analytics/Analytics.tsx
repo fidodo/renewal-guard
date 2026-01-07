@@ -1,7 +1,10 @@
 import React from "react";
 import { useAppSelector } from "../../../hooks/redux";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
+import { SubscriptionAISuggestion } from "../subscription/Subscription-ai-suggestion";
 import {
   BarChart,
   Bar,
@@ -334,6 +337,93 @@ function Analytics() {
         {/* Upcoming Renewals */}
         <Card className="col-span-1">
           <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg sm:text-xl">
+                Upcoming Renewals (30 Days)
+              </CardTitle>
+              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Savings
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto pr-2">
+              {upcomingRenewals.length > 0 ? (
+                upcomingRenewals.map((subscription) => (
+                  <div key={subscription.id} className="space-y-2">
+                    <div
+                      className="flex justify-between items-center p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer group"
+                      onClick={() => {
+                        // Optional: Expand/collapse AI suggestion
+                        const aiCard = document.getElementById(
+                          `ai-suggestion-${subscription.id}`
+                        );
+                        if (aiCard) {
+                          aiCard.classList.toggle("hidden");
+                        }
+                      }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm truncate">
+                            {subscription.name}
+                          </p>
+                          <Sparkles className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(
+                            subscription.billingDate?.nextBillingDate
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <p className="font-semibold text-sm">
+                          ${subscription.price?.amount?.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize truncate max-w-20">
+                          {subscription.category}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* AI Suggestion Card - Initially hidden */}
+                    <div
+                      id={`ai-suggestion-${subscription.id}`}
+                      className="hidden"
+                    >
+                      <SubscriptionAISuggestion subscription={subscription} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No upcoming renewals in the next 30 days
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Optional: Add a batch AI suggestion button at the bottom */}
+            <div className="mt-4 pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => {
+                  // Optional: Open modal with all subscriptions for batch AI analysis
+                  alert("Batch AI Savings Report coming soon!");
+                }}
+              >
+                <Sparkles className="h-3 w-3 mr-2" />
+                Get AI Savings Report for All Subscriptions
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        {/* <Card className="col-span-1">
+          <CardHeader>
             <CardTitle className="text-lg sm:text-xl">
               Upcoming Renewals (30 Days)
             </CardTitle>
@@ -375,7 +465,7 @@ function Analytics() {
               )}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

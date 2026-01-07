@@ -56,7 +56,6 @@ export default function SettingsPage() {
   const setting = useAppSelector((state) => state.setting.setting);
   const loading = useAppSelector((state) => state.setting.loading);
   const user = useAppSelector((state) => state.user.user);
-  console.log("user:", user);
 
   // Use local state for form, initialized from Redux or defaults
   const [settings, setLocalSettings] = useState<UserSettings>(defaultSettings);
@@ -65,13 +64,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (setting && Object.keys(setting).length > 0) {
-      console.log("🔄 Updating local settings from Redux:", setting);
       setLocalSettings(setting as UserSettings);
     } else {
-      // Try to load from localStorage as fallback
       const localSettings = localStorage.getItem("userSettings");
       if (localSettings) {
-        console.log("🔄 Loading settings from localStorage");
         setLocalSettings(JSON.parse(localSettings));
       }
     }
@@ -84,20 +80,15 @@ export default function SettingsPage() {
         const token = localStorage.getItem("token");
 
         if (!token) {
-          console.log("❌ No token found, using localStorage settings");
           loadFromLocalStorage();
           return;
         }
 
-        console.log("🔄 Fetching settings from API...");
-
         const response = await fetch(`/api/v1/settings`);
 
-        console.log("🔍 Settings API response status:", response.status);
         const errorMessage = `Failed to fetch settings: ${response.status}`;
         if (response.ok) {
           const result = await response.json();
-          console.log("✅ Settings fetched successfully:", result);
 
           if (!result.success) {
             console.error(
@@ -116,18 +107,13 @@ export default function SettingsPage() {
 
             if (settingData && Object.keys(settingData).length > 0) {
               dispatch(setSetting(settingData));
-              console.log("✅ Settings loaded from API");
             } else {
-              console.log("⚠️ API returned empty settings, using fallback");
               loadFromLocalStorage();
             }
           } else {
-            console.log("⚠️ API response format issue:", result);
             loadFromLocalStorage();
           }
         } else if (response.status === 401) {
-          console.log("❌ Still unauthorized after token refresh");
-          // Token refresh failed, use local storage
           loadFromLocalStorage();
         } else {
           console.error("❌ Failed to fetch settings:", response.status);
@@ -143,11 +129,9 @@ export default function SettingsPage() {
     const loadFromLocalStorage = () => {
       const localSettings = localStorage.getItem("userSettings");
       if (localSettings) {
-        console.log("📁 Loading settings from localStorage");
         const parsedSettings = JSON.parse(localSettings);
         dispatch(setSetting(parsedSettings));
       } else {
-        console.log("📁 Using default settings");
         dispatch(setSetting(defaultSettings));
       }
     };
@@ -170,7 +154,6 @@ export default function SettingsPage() {
 
     try {
       const userId = user?.id;
-      console.log("id:", userId);
 
       // Check if user is authenticated
       const token =
@@ -192,7 +175,6 @@ export default function SettingsPage() {
       });
 
       const responseText = await response.text();
-      console.log("Raw response:", responseText);
 
       let result;
       try {

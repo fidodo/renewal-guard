@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "../../test-utils";
 import "@testing-library/jest-dom";
-import SubscriptionForm from "../components/dashboard/SubscriptionForm";
+import SubscriptionForm from "../components/dashboard/subscription/SubscriptionForm";
 
 // Mock the UI components
 jest.mock("@/components/ui/dialog", () => ({

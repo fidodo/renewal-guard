@@ -2,15 +2,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
 import { Button } from "@/components/ui/button";
-import SubscriptionCard from "./SubscriptionCard";
-import SubscriptionForm from "./SubscriptionForm";
+import SubscriptionCard from "./subscription/SubscriptionCard";
+import SubscriptionForm from "./subscription/SubscriptionForm";
 import {
   setSubscriptions,
   updateSubscriptionStatus,
 } from "../../store/slices/subscriptionSlice";
 
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
-import { Subscription } from "./SubscriptionForm";
+import { Subscription } from "./subscription/SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { refreshAuthToken } from "@/app/hooks/refresh-token";
 
@@ -43,13 +43,13 @@ const Dashboard = () => {
 
   // Filter subscriptions by status
   const activeSubscriptions = subscriptions?.filter(
-    (sub) => sub.status === "active"
+    (sub) => sub?.status === "active"
   );
   const expiredSubscriptions = subscriptions?.filter(
-    (sub) => sub.status === "expired"
+    (sub) => sub?.status === "expired"
   );
   const cancelledSubscriptions = subscriptions?.filter(
-    (sub) => sub.status === "cancelled"
+    (sub) => sub?.status === "cancelled"
   );
 
   const sortedActiveSubscriptions = useMemo(() => {
@@ -158,12 +158,9 @@ const Dashboard = () => {
   // Fetch subscriptions from backend
   const fetchSubscriptions = async () => {
     try {
-      console.log("🔄 Fetching subscriptions...");
-
       const token = localStorage.getItem("token");
 
       if (!token) {
-        console.error("No authentication token found");
         setError("Please log in to view subscriptions");
         dispatch(setSubscriptions([]));
         return;
@@ -177,10 +174,7 @@ const Dashboard = () => {
         },
       });
 
-      console.log("📊 Response status:", response.status);
-
       if (response.status === 401) {
-        console.log("Token expired, attempting refresh...");
         const refreshSuccess = await refreshAuthToken();
 
         if (refreshSuccess) {
@@ -232,8 +226,6 @@ const Dashboard = () => {
   const handleSuccessfulResponse = async (
     result: ApiResponse<Subscription[]>
   ) => {
-    console.log("🔍 Raw API response:", result);
-
     if (!result.success) {
       console.error("API returned error:", result.message || result.error);
       setError(result.message || "Failed to fetch subscriptions");
@@ -246,7 +238,6 @@ const Dashboard = () => {
         ? result.data
         : [result.data];
 
-      console.log("✅ Setting subscriptions:", subscriptionsData);
       dispatch(setSubscriptions(subscriptionsData));
     } else {
       console.warn("No subscriptions data found in response");
@@ -299,8 +290,8 @@ const Dashboard = () => {
             );
 
             if (retryResponse.ok) {
-              const result = await retryResponse.json();
-              console.log("✅ Subscription cancelled:", result);
+              await retryResponse.json();
+
               dispatch(updateSubscriptionStatus({ id, status: "cancelled" }));
               alert("Subscription cancelled successfully!");
               return;
@@ -313,8 +304,8 @@ const Dashboard = () => {
       }
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Subscription cancelled:", result);
+        await response.json();
+
         dispatch(updateSubscriptionStatus({ id, status: "cancelled" }));
         alert("Subscription cancelled successfully!");
       } else {
@@ -375,8 +366,8 @@ const Dashboard = () => {
             });
 
             if (retryResponse.ok) {
-              const result = await retryResponse.json();
-              console.log("✅ Subscription deleted:", result);
+              await retryResponse.json();
+
               dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
               alert("Subscription deleted successfully!");
               fetchSubscriptions();
@@ -390,8 +381,8 @@ const Dashboard = () => {
       }
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Subscription deleted:", result);
+        await response.json();
+
         dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
         alert("Subscription deleted successfully!");
         fetchSubscriptions();

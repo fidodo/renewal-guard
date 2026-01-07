@@ -18,23 +18,19 @@ let refreshInProgress: Promise<boolean> | null = null;
 
 // Clear tokens and prompt user to re-login
 const promptReauthentication = (): void => {
-  // Clear all auth tokensi do not have
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
 
-  // Show login modal or redirect to login page
   const shouldRelogin = window.confirm(
     "Your session has expired. Please log in again to continue."
   );
 
   if (shouldRelogin) {
-    // Redirect to login page or show login modal
     window.location.href = "/loginPage";
   }
 };
 
 const handleInvalidRefreshToken = (): void => {
-  console.log("Refresh token is invalid or expired");
   promptReauthentication();
 };
 
@@ -50,7 +46,6 @@ const clearTokens = (): void => {
 
 // Enhanced token refresh with re-authentication
 const refreshAuthToken = async (): Promise<boolean> => {
-  // Prevent multiple simultaneous refresh attempts
   if (refreshInProgress) {
     return refreshInProgress;
   }
@@ -60,7 +55,6 @@ const refreshAuthToken = async (): Promise<boolean> => {
       const refreshToken = localStorage.getItem("refreshToken");
 
       if (!refreshToken) {
-        console.log("No refresh token available");
         promptReauthentication();
         return false;
       }
@@ -76,9 +70,6 @@ const refreshAuthToken = async (): Promise<boolean> => {
       console.log("Refresh response:", response);
 
       if (!response.ok) {
-        console.error("Token refresh failed:", response.status);
-
-        // If refresh token is invalid/expired, prompt re-authentication
         if (response.status === 401 || response.status === 403) {
           handleInvalidRefreshToken();
         }
@@ -95,7 +86,7 @@ const refreshAuthToken = async (): Promise<boolean> => {
 
       if (data.success && data.token && data.refreshToken) {
         setTokens(data.token, data.refreshToken);
-        console.log("Token refreshed successfully");
+
         return true;
       }
 
@@ -294,7 +285,6 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      console.log("User already authenticated, redirecting to dashboard...");
       router.push("/dashboard");
     }
   }, [isAuthenticated, authLoading, router]);
@@ -332,8 +322,7 @@ export default function LoginPage() {
       const inputs = document.querySelectorAll("input");
       const clearError = () => {
         if (state.error) {
-          // You might want to implement a way to clear the error state here
-          // This would require modifying the useActionState approach or using a different state management
+          state.error = "";
         }
       };
 
@@ -347,7 +336,7 @@ export default function LoginPage() {
         });
       };
     }
-  }, [state.error]);
+  }, [state, state.error]);
 
   if (authLoading || isAuthenticated) {
     return (

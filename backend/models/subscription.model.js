@@ -149,6 +149,47 @@ const subscriptionSchema = new mongoose.Schema(
   }
 );
 
+// ========== SIMPLE PRE-SAVE MIDDLEWARE ==========
+subscriptionSchema.pre("save", function (next) {
+  // Only update if not cancelled/deleted
+  if (this.status !== "cancelled" && this.status !== "deleted") {
+    const today = new Date();
+    const renewalDate = this.billingDate.nextBillingDate;
+
+    // Calculate days until renewal
+    const timeDiff = renewalDate.getTime() - today.getTime();
+    const daysUntilRenewal = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    // Update status based on days
+    if (daysUntilRenewal < 0) {
+      this.status = "expired";
+    } else {
+      this.status = "active";
+    }
+  }
+
+  next();
+});
+
+// ========== VIRTUAL FIELD (Calculates on-the-fly) ==========
+subscriptionSchema.virtual("daysUntilRenewal").get(function () {
+  if (!this.billingDate?.nextBillingDate) return null;
+  const today = new Date();
+  const renewalDate = this.billingDate.nextBillingDate;
+  const timeDiff = renewalDate.getTime() - today.getTime();
+  return Math.ceil(timeDiff / (1000 * 3600 * 24));
+});
+
+// ========== METHOD TO CHECK IF EXPIRED ==========
+subscriptionSchema.methods.isExpired = function () {
+  const days = this.daysUntilRenewal;
+  return days < 0 || this.status === "expired";
+};
+
+// Enable virtuals
+subscriptionSchema.set("toJSON", { virtuals: true });
+subscriptionSchema.set("toObject", { virtuals: true });
+
 // Indexes for search
 subscriptionSchema.index({ userId: 1, name: 1 });
 subscriptionSchema.index({ userId: 1, serviceName: 1 });

@@ -49,22 +49,12 @@ export const sendReminderSMS = async ({ to, type, subscription }) => {
       daysLeft,
     });
 
-    console.log("Sending SMS:", {
-      to,
-      userName,
-      subscriptionName,
-      renewalDate: formattedDate,
-      daysLeft,
-      type,
-    });
-
     const result = await client.messages.create({
       body: message,
       from: TWILIO_PHONE_NUMBER,
       to: to.trim(),
     });
 
-    console.log("✅ SMS sent successfully:", result.sid);
     return result;
   } catch (error) {
     console.error("❌ Failed to send SMS:", error.message);

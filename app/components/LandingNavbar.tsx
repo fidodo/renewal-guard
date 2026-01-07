@@ -77,7 +77,7 @@ export const LandingNavbar = () => {
           type: filter.type,
           filters: filter,
         };
-        console.log("🔍 Search request:", body);
+
         const response = await fetch(`/api/v1/search/global`, {
           method: "POST",
           body: JSON.stringify(body),
@@ -85,10 +85,8 @@ export const LandingNavbar = () => {
 
         const data = await response.json();
         if (response.ok && data.success) {
-          console.log("🔍 Search API response:", data);
           setSearchResults(data.data || []);
         } else {
-          console.error("Search failed:", response.status);
           setSearchResults([]);
         }
       } catch (error) {
@@ -102,7 +100,6 @@ export const LandingNavbar = () => {
     []
   );
 
-  console.log(debouncedSearchQuery, searchFilter);
   // Debounced search effect
   useEffect(() => {
     if (debouncedSearchQuery) {

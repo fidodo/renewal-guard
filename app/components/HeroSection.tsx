@@ -3,12 +3,6 @@ import Link from "next/link";
 
 export const HeroSection = () => {
   const handleGoogleSignIn = () => {
-    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
-    console.log(
-      "Full redirect URL:",
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google`
-    );
-
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
     window.location.href = `${apiUrl}/api/v1/auth/google`;
   };

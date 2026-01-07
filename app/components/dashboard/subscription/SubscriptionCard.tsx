@@ -54,6 +54,11 @@ const SubscriptionCard = ({
         return "destructive";
       case "pending":
         return "destructive";
+      case "due_today":
+        return "warning";
+      case "renewing_soon":
+        return "info";
+
       default:
         return "secondary";
     }
@@ -62,7 +67,11 @@ const SubscriptionCard = ({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl">{subscription.name}</CardTitle>
+        <CardTitle className="text-xl">
+          {subscription.name
+            .toLowerCase()
+            .replace(/\b\w/g, (char) => char.toUpperCase())}
+        </CardTitle>
         <div className="flex items-center gap-2">
           <Badge variant={getBadgeVariant()}>{subscription.status}</Badge>
           {subscription.autoRenew && subscription.status === "active" && (

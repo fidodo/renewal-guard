@@ -5,15 +5,10 @@ export const getSetting = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    console.log("🔍 GET SETTINGS - User ID:", userId);
-
     const settings = await Setting.findOne({ userId: userId });
-
-    console.log("🔍 Settings found in database:", settings);
 
     // If no settings found, return default settings
     if (!settings) {
-      console.log("⚠️ No settings found for user, returning defaults");
       const defaultSettings = {
         emailNotifications: true,
         pushNotifications: false,
@@ -32,7 +27,6 @@ export const getSetting = async (req, res, next) => {
       });
     }
 
-    console.log("✅ Returning settings from database");
     res.status(200).json({
       success: true,
       data: settings,

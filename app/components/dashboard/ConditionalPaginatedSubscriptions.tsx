@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { useAppSelector } from "@/app/hooks/redux";
-import { Subscription } from "./SubscriptionForm";
-import SubscriptionCard from "./SubscriptionCard";
+import { Subscription } from "./subscription/SubscriptionForm";
+import SubscriptionCard from "./subscription/SubscriptionCard";
 
 interface ConditionalPaginatedSubscriptionsProps {
   title: string;

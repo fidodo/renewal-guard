@@ -28,10 +28,7 @@ export const SearchModal = ({
 }: SearchModalProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  console.log(
-    "🚀 ~ file: SearchModal.tsx:29 ~ SearchModal ~ results:",
-    results
-  );
+
   const quickSearches = [
     {
       type: "price" as SearchType,

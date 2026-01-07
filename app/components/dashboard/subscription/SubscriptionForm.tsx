@@ -51,7 +51,9 @@ export interface Subscription {
     | "cancelled"
     | "inactive"
     | "pending"
-    | "deleted";
+    | "deleted"
+    | "due_today"
+    | "renewing_soon";
   paymentMethod: string;
   autoRenew: boolean;
   sendReminders: boolean;
@@ -150,12 +152,8 @@ const SubscriptionForm = ({
 
       const headers: HeadersInit = {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       };
-
-      // Add authorization header if token exists
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
 
       let response;
 
@@ -165,32 +163,25 @@ const SubscriptionForm = ({
         // Update existing subscription
         response = await fetch(`/api/v1/subscriptions/${subscriptionId}`, {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify(subscriptionData),
         });
-        console.log("response", response);
       } else {
         // Create new subscription
         response = await fetch(`/api/v1/subscriptions`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
 
           body: JSON.stringify(subscriptionData),
         });
       }
-      console.log("response", response);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.warn("Response not ok:", response);
       }
 
       const result = await response.json();
 
-      console.log("result", result);
       // Update Redux store with the response from backend
       if (mode === "edit" && subscription) {
         dispatch(updateSubscription(result.data));
@@ -203,10 +194,6 @@ const SubscriptionForm = ({
         onSubmit(result.data);
       }
 
-      // Show success message (you can use toast or alert)
-      console.log(
-        `${mode === "edit" ? "Updated" : "Created"} subscription successfully!`
-      );
       onSuccess?.();
 
       // Close the form

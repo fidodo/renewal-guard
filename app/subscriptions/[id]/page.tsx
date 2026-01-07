@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/app/hooks/redux";
 import { updateSubscriptionById } from "@/app/store/slices/subscriptionSlice";
-import { Subscription } from "@/app/components/dashboard/SubscriptionForm";
+import { Subscription } from "@/app/components/dashboard/subscription/SubscriptionForm";
 import { LandingNavbar } from "@/app/components/LandingNavbar";
 import Sidebar from "@/app/components/layout/Sidebar";
 

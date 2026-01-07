@@ -14,8 +14,6 @@ const mobileMenuItems = [
 export const MobileBottomNav = () => {
   const pathname = usePathname();
 
-  console.log("📱 MobileBottomNav rendering, current path:", pathname);
-
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t lg:hidden z-40 w-screen">
       <div className="flex justify-between items-center w-full px-2">

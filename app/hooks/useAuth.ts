@@ -17,7 +17,6 @@ export const useAuth = () => {
     const checkAuth = async () => {
       // Prevent running multiple times
       if (hasCheckedAuth.current && retryCount.current >= maxRetries) {
-        console.log("🛑 Max retries reached, stopping auth checks");
         setIsLoading(false);
         return;
       }
@@ -26,22 +25,14 @@ export const useAuth = () => {
       const token = localStorage.getItem("token");
       const refreshToken = localStorage.getItem("refreshToken");
 
-      console.log("🔑 Tokens found:", {
-        token: token ? "yes" : "no",
-        refreshToken: refreshToken ? "yes" : "no",
-      });
-
       // No tokens -> clear user and exit
       if (!token || !refreshToken) {
-        console.log("❌ No tokens found");
         handleAuthFailure(false);
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("🔄 Checking auth with token...");
-        // ✅ Attempt to validate current token
         const response = await fetch(`/api/v1/auth/me`, {
           method: "GET",
           headers: {
@@ -51,11 +42,8 @@ export const useAuth = () => {
           credentials: "include",
         });
 
-        console.log("🔍 Auth check response status:", response.status);
-
         // ❌ Handle rate limiting - for 429, don't clear tokens immediately
         if (response.status === 429) {
-          console.log("🚨 Rate limited (429) detected - waiting...");
           setAuthError(
             "Too many authentication attempts. Please wait a moment."
           );
@@ -67,9 +55,8 @@ export const useAuth = () => {
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Auth check success data:", data);
+
           if (data.success) {
-            console.log("🎯 User authenticated successfully:", data.user);
             dispatch(setUser(data.user));
             setIsAuthenticated(true);
             setAuthError(null);
@@ -90,11 +77,10 @@ export const useAuth = () => {
 
         // ❌ Token expired or invalid → try refresh
         if (response.status === 401) {
-          console.log("🔄 Token expired (401), attempting refresh...");
           await refreshAuthToken(refreshToken);
         } else {
           const errorText = await response.text();
-          console.log("❌ Non-401 error response body:", errorText);
+
           throw new Error(
             `Auth failed with status: ${response.status} - ${errorText}`
           );
@@ -110,10 +96,8 @@ export const useAuth = () => {
           error instanceof Error &&
           !error.message.includes("Failed to fetch")
         ) {
-          console.log("🔒 Clearing tokens due to auth failure");
           handleAuthFailure(true);
         } else {
-          console.log("🌐 Network error, keeping tokens");
           handleAuthFailure(false);
         }
         setIsAuthenticated(false);
@@ -146,7 +130,6 @@ export const useAuth = () => {
 
         console.log("🔍 Refresh response status:", res.status);
 
-        // ❌ Handle rate limiting in refresh - don't clear tokens
         if (res.status === 429) {
           console.log("🚨 Refresh rate limited (429)");
           setAuthError("Too many refresh attempts. Please wait a moment.");
@@ -156,12 +139,44 @@ export const useAuth = () => {
           return;
         }
 
+        if (res.status === 401 || res.status === 403) {
+          console.log("🔐 Refresh token invalid or expired (401/403)");
+          const errorText = await res.text().catch(() => "No error details");
+          console.log("⚠️ Refresh failed - authentication error:", errorText);
+
+          setAuthError("Your session has expired. Please log in again.");
+          setShowReloginPrompt(true);
+          setIsAuthenticated(false);
+          handleAuthFailure(true);
+          setIsLoading(false);
+
+          localStorage.removeItem("token");
+
+          return;
+        }
+
         if (!res.ok) {
-          const errorText = await res.text();
+          const errorText = await res
+            .text()
+            .catch(() => "Could not read error text");
           console.log("❌ Refresh failed - response body:", errorText);
-          throw new Error(
-            `Token refresh failed with status: ${res.status} - ${errorText}`
-          );
+
+          // Handle specific server errors
+          if (res.status >= 500) {
+            console.log("🖥️ Server error during refresh");
+            setAuthError("Server error. Please try again later.");
+          } else {
+            setAuthError("Unable to refresh session. Please try again.");
+          }
+
+          // Show relogin prompt on client errors (4xx except 401/403 already handled)
+          if (res.status >= 400 && res.status < 500) {
+            setShowReloginPrompt(true);
+          }
+
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
         }
 
         const data = await res.json();
@@ -172,7 +187,6 @@ export const useAuth = () => {
           localStorage.setItem("token", data.data.token);
           retryCount.current = 0;
 
-          // ✅ Retry original request with new token
           console.log("🔄 Retrying auth check with new token");
           const retry = await fetch(`/api/v1/auth/me`, {
             headers: {
@@ -194,17 +208,31 @@ export const useAuth = () => {
               return;
             } else {
               console.log("❌ Auth failed after refresh - success false");
+              setAuthError("Session validation failed. Please log in again.");
+              setShowReloginPrompt(true);
             }
           } else {
             console.log("❌ Auth retry failed - status:", retry.status);
+            setAuthError("Could not verify session. Please log in again.");
+            setShowReloginPrompt(true);
           }
         } else {
           console.log("❌ Refresh response missing token or success false");
+          setAuthError("Invalid refresh response. Please log in again.");
+          setShowReloginPrompt(true);
         }
 
-        throw new Error("Authentication failed after refresh");
+        setIsAuthenticated(false);
+        handleAuthFailure(true);
+        setIsLoading(false);
       } catch (error) {
         console.error("❌ Token refresh error:", error);
+
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          console.log("🌐 Network error during refresh");
+          setAuthError("Network error. Please check your connection.");
+        }
+
         if (retryCount.current >= maxRetries) {
           setAuthError("Session expired. Please log in again.");
           setShowReloginPrompt(true);
