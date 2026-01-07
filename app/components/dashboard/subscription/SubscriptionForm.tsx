@@ -51,9 +51,8 @@ export interface Subscription {
     | "cancelled"
     | "inactive"
     | "pending"
-    | "deleted"
-    | "due_today"
-    | "renewing_soon";
+    | "deleted";
+
   paymentMethod: string;
   autoRenew: boolean;
   sendReminders: boolean;

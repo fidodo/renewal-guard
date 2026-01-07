@@ -54,10 +54,6 @@ const SubscriptionCard = ({
         return "destructive";
       case "pending":
         return "destructive";
-      case "due_today":
-        return "warning";
-      case "renewing_soon":
-        return "info";
 
       default:
         return "secondary";
