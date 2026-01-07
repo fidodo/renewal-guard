@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent } from "../../test-utils";
 import "@testing-library/jest-dom";
-import SubscriptionCard from "../components/dashboard/SubscriptionCard";
+import SubscriptionCard from "../components/dashboard/subscription/SubscriptionCard";
 
 const mockSubscription = {
   id: "1",
