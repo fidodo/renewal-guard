@@ -50,7 +50,7 @@
     "morgan": "~1.9.1",
     "next": "15.5.9",
     "nodemailer": "^7.0.10",
-    "openai": "^6.9.1",
+    "openai": "^6.15.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "react": "19.1.0",
