@@ -12,6 +12,7 @@ import {
   cancelSubscription,
   deleteSubscription,
 } from "../controller/subscription.controller.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const subscriptionRouter = Router();
 
@@ -95,7 +96,12 @@ subscriptionRouter.post("/", authorize, createSubscription);
  *       200:
  *         description: List of subscriptions
  */
-subscriptionRouter.get("/", authorize, getAllSubscriptions);
+subscriptionRouter.get(
+  "/",
+  authorize,
+  cacheMiddleware(120),
+  getAllSubscriptions,
+);
 
 /**
  * @swagger
@@ -109,7 +115,12 @@ subscriptionRouter.get("/", authorize, getAllSubscriptions);
  *       200:
  *         description: List of user subscriptions
  */
-subscriptionRouter.get("/user", authorize, getUserSubscriptions);
+subscriptionRouter.get(
+  "/user",
+  authorize,
+  cacheMiddleware(220),
+  getUserSubscriptions,
+);
 
 /**
  * @swagger
@@ -143,7 +154,12 @@ subscriptionRouter.get("/upcoming", authorize, getUpcomingRenewals);
  *       200:
  *         description: Subscription data
  */
-subscriptionRouter.get("/:id", authorize, getSubscriptionById);
+subscriptionRouter.get(
+  "/:id",
+  authorize,
+  cacheMiddleware(120),
+  getSubscriptionById,
+);
 
 /**
  * @swagger

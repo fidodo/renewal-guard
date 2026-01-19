@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getAllUsers, getUserById } from "../controller/user.controller.js";
 import authorize from "../middlewares/auth.middleware.js";
+import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const userRouter = Router();
 
@@ -34,7 +35,7 @@ const userRouter = Router();
  *                   name:
  *                     type: string
  */
-userRouter.get("/", authorize, getAllUsers);
+userRouter.get("/", cacheMiddleware(120), authorize, getAllUsers);
 
 /**
  * @swagger
@@ -57,7 +58,7 @@ userRouter.get("/", authorize, getAllUsers);
  *       404:
  *         description: User not found
  */
-userRouter.get("/:id", authorize, getUserById);
+userRouter.get("/:id", cacheMiddleware(), authorize, getUserById);
 
 /**
  * @swagger

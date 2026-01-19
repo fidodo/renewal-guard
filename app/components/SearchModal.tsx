@@ -28,7 +28,7 @@ export const SearchModal = ({
 }: SearchModalProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-
+  console.log(results);
   const quickSearches = [
     {
       type: "price" as SearchType,
@@ -213,7 +213,7 @@ export const SearchModal = ({
                           <span className="text-xs text-muted-foreground group-hover:text-accent-foreground/80">
                             Renews:{" "}
                             {new Date(
-                              result.billingDate?.nextBillingDate
+                              result.billingDate?.nextBillingDate,
                             ).toLocaleDateString()}
                           </span>
                         )}

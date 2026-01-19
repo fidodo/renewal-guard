@@ -78,12 +78,19 @@ export const LandingNavbar = () => {
           filters: filter,
         };
 
+        const token = localStorage.getItem("token");
+        console.log("Search body:", body, "Token:", token);
         const response = await fetch(`/api/v1/search/global`, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify(body),
         });
 
         const data = await response.json();
+        console.log("Search data:", data);
         if (response.ok && data.success) {
           setSearchResults(data.data || []);
         } else {
@@ -97,7 +104,7 @@ export const LandingNavbar = () => {
       }
     },
 
-    []
+    [],
   );
 
   // Debounced search effect
