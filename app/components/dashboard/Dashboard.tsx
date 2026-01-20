@@ -37,19 +37,42 @@ const Dashboard = () => {
 
   // Get subscriptions from Redux store
   const subscriptions = useAppSelector(
-    (state) => state.subscription.subscriptions
+    (state) => state.subscription.subscriptions,
   );
   const loading = useAppSelector((state) => state.subscription.loading);
 
+  const currentDate = new Date();
+
+  // Helper function to process subscription status
+  const processSubscriptionStatus = (sub: Subscription): Subscription => {
+    const nextBillingDate = sub?.billingDate?.nextBillingDate;
+
+    if (nextBillingDate) {
+      const billingDate = new Date(nextBillingDate);
+
+      if (sub.status === "active" && billingDate <= currentDate) {
+        return { ...sub, status: "expired" };
+      }
+
+      if (sub.status === "expired" && billingDate > currentDate) {
+        return { ...sub, status: "active" };
+      }
+    }
+
+    return sub;
+  };
+
+  const processedSubscriptions = subscriptions?.map(processSubscriptionStatus);
+
   // Filter subscriptions by status
-  const activeSubscriptions = subscriptions?.filter(
-    (sub) => sub?.status === "active"
+  const activeSubscriptions = processedSubscriptions?.filter(
+    (sub) => sub.status === "active",
   );
-  const expiredSubscriptions = subscriptions?.filter(
-    (sub) => sub?.status === "expired"
+  const expiredSubscriptions = processedSubscriptions?.filter(
+    (sub) => sub.status === "expired",
   );
-  const cancelledSubscriptions = subscriptions?.filter(
-    (sub) => sub?.status === "cancelled"
+  const cancelledSubscriptions = processedSubscriptions?.filter(
+    (sub) => sub.status === "cancelled",
   );
 
   const sortedActiveSubscriptions = useMemo(() => {
@@ -86,7 +109,7 @@ const Dashboard = () => {
 
   // Handle sort button click
   const handleSortClick = (
-    newSortBy: "autoRenew" | "nextBillingDate" | "name"
+    newSortBy: "autoRenew" | "nextBillingDate" | "name",
   ) => {
     if (sortBy === newSortBy) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -110,7 +133,7 @@ const Dashboard = () => {
 
   // Get sort button label
   const getSortButtonLabel = (
-    column: "autoRenew" | "nextBillingDate" | "name"
+    column: "autoRenew" | "nextBillingDate" | "name",
   ) => {
     const labels = {
       autoRenew: "Auto Renew",
@@ -224,7 +247,7 @@ const Dashboard = () => {
 
   // Helper function to handle successful responses
   const handleSuccessfulResponse = async (
-    result: ApiResponse<Subscription[]>
+    result: ApiResponse<Subscription[]>,
   ) => {
     if (!result.success) {
       console.error("API returned error:", result.message || result.error);
@@ -253,7 +276,7 @@ const Dashboard = () => {
   const handleCancelSubscription = async (id: string) => {
     try {
       const isConfirmed = window.confirm(
-        "Are you sure you want to cancel this subscription?"
+        "Are you sure you want to cancel this subscription?",
       );
       if (!isConfirmed) return;
 
@@ -286,7 +309,7 @@ const Dashboard = () => {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${newToken}`,
                 },
-              }
+              },
             );
 
             if (retryResponse.ok) {
@@ -312,7 +335,7 @@ const Dashboard = () => {
         const errorData = await response.json();
         throw new Error(
           errorData.message ||
-            `Failed to cancel subscription: ${response.status}`
+            `Failed to cancel subscription: ${response.status}`,
         );
       }
     } catch (error) {
@@ -334,7 +357,7 @@ const Dashboard = () => {
   const handleDeleteSubscription = async (id: string) => {
     try {
       const isConfirmed = window.confirm(
-        "Are you sure you want to delete this subscription? This action cannot be undone."
+        "Are you sure you want to delete this subscription? This action cannot be undone.",
       );
       if (!isConfirmed) return;
 
@@ -390,7 +413,7 @@ const Dashboard = () => {
         const errorData = await response.json();
         throw new Error(
           errorData.message ||
-            `Failed to delete subscription: ${response.status}`
+            `Failed to delete subscription: ${response.status}`,
         );
       }
     } catch (error) {

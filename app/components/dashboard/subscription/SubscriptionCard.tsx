@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Subscription } from "./SubscriptionForm";
+import { getDaysUntilRenewal } from "@/app/helper/getDaysUntilRenewal";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -19,21 +20,8 @@ const SubscriptionCard = ({
   isCancelling = false,
   onEdit,
 }: SubscriptionCardProps) => {
-  const getDaysUntilRenewal = (renewalDate: string) => {
-    try {
-      const renewal = new Date(renewalDate);
-      const today = new Date();
-      const diffTime = renewal.getTime() - today.getTime();
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    } catch (error) {
-      console.log(error);
-      console.error("Invalid date format:", renewalDate);
-      return 0;
-    }
-  };
-
   const daysUntilRenewal = getDaysUntilRenewal(
-    subscription.billingDate?.nextBillingDate
+    subscription.billingDate?.nextBillingDate,
   );
 
   const formattedPrice = subscription.price.amount
