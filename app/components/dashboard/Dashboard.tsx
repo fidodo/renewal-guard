@@ -12,9 +12,11 @@ import {
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 import { Subscription } from "./subscription/SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
-import { refreshAuthToken } from "@/app/hooks/refresh-token";
+
 import { AddSubscriptionOptions } from "./AddSubscriptionOptions";
 import { ImageUploadSubscription } from "./ImageUploadSubscription";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
+
 const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
@@ -190,6 +192,71 @@ const Dashboard = () => {
   };
 
   // Fetch subscriptions from backend
+  // const fetchSubscriptions = useCallback(async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) {
+  //       setError("Please log in to view subscriptions");
+  //       dispatch(setSubscriptions([]));
+  //       setIsInitialLoading(false);
+  //       return;
+  //     }
+
+  //     const response = await fetch(`/api/v1/subscriptions/user`, {
+  //       method: "GET",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+
+  //     if (response.status === 401) {
+  //       const refreshSuccess = await refreshAuthToken();
+  //       if (refreshSuccess) {
+  //         const newToken = localStorage.getItem("token");
+  //         if (newToken) {
+  //           const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
+  //             method: "GET",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //               Authorization: `Bearer ${newToken}`,
+  //             },
+  //           });
+  //           if (retryResponse.ok) {
+  //             const result = await retryResponse.json();
+  //             if (result.success && result.data) {
+  //               dispatch(
+  //                 setSubscriptions(
+  //                   Array.isArray(result.data) ? result.data : [result.data],
+  //                 ),
+  //               );
+  //             }
+  //           }
+  //         }
+  //       }
+  //       setIsInitialLoading(false);
+  //       return;
+  //     }
+
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch subscriptions: ${response.status}`);
+  //     }
+
+  //     const result = await response.json();
+  //     if (result.success && result.data) {
+  //       const subscriptionsData = Array.isArray(result.data)
+  //         ? result.data
+  //         : [result.data];
+  //       dispatch(setSubscriptions(subscriptionsData));
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching subscriptions:", error);
+  //     setError("Failed to load subscriptions");
+  //   } finally {
+  //     setIsInitialLoading(false);
+  //   }
+  // }, [dispatch]);
+
   const fetchSubscriptions = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
@@ -200,41 +267,9 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(`/api/v1/subscriptions/user`, {
+      const response = await fetchWithAuth(`/api/v1/subscriptions/user`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
       });
-
-      if (response.status === 401) {
-        const refreshSuccess = await refreshAuthToken();
-        if (refreshSuccess) {
-          const newToken = localStorage.getItem("token");
-          if (newToken) {
-            const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-            if (retryResponse.ok) {
-              const result = await retryResponse.json();
-              if (result.success && result.data) {
-                dispatch(
-                  setSubscriptions(
-                    Array.isArray(result.data) ? result.data : [result.data],
-                  ),
-                );
-              }
-            }
-          }
-        }
-        setIsInitialLoading(false);
-        return;
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to fetch subscriptions: ${response.status}`);

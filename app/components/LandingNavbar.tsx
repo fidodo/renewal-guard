@@ -2,15 +2,17 @@
 import { useState, useCallback, useEffect, useRef, useTransition } from "react";
 import { Bell, Menu, Search, User, ShieldBan, X, Filter } from "lucide-react";
 import Link from "next/link";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 
-import { clearUser } from "../store/slices/userSlice";
 import { RootState } from "../store/store";
 import ThemeToggle from "./ThemeToggle";
 import { SearchModal } from "./SearchModal";
 import { useDebounce } from "../hooks/useDebounce";
+
 import { useAppSelector } from "../hooks/redux";
+import { useAuthSync } from "../hooks/useAuthSync";
+import { useLogout } from "../hooks/useLogout";
 
 // Search types
 export type SearchType = "all" | "subscription" | "service" | "price" | "date";
@@ -52,13 +54,18 @@ export const LandingNavbar = () => {
   const [searchFilter, setSearchFilter] = useState<SearchFilter>({
     type: "all",
   });
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [, startTransition] = useTransition();
 
-  const dispatch = useDispatch();
   const router = useRouter();
   const reduxUser = useSelector((state: RootState) => state.user.user);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { logout } = useLogout();
+
+  // Sync auth state across components
+  useAuthSync();
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -125,39 +132,14 @@ export const LandingNavbar = () => {
     }
   }, [isSearchOpen]);
 
-  const handleLogout = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      // Call logout API if tokens exist
-      if (token) {
-        await fetch(`/api/v1/auth/sign-out`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ refreshToken }),
-        }).catch((error) => {
-          console.error("Logout API error:", error);
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Always clear local storage and state
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      dispatch(clearUser());
-      setIsMenuOpen(false);
-      setIsSearchOpen(false);
-
-      // Redirect to home page
-      router.push("/");
-    }
-  }, [dispatch, router]);
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    await logout();
+    setIsMenuOpen(false);
+    setIsSearchOpen(false);
+    setIsLoggingOut(false);
+  };
 
   const handleResultClick = (result: SearchResult) => {
     setIsSearchOpen(false);

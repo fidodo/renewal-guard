@@ -4,11 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { SidebarThemeToggle } from "./SideBarThemeToggle";
-import { useCallback, useState } from "react";
-import { useDispatch } from "react-redux";
-import { clearUser } from "../../store/slices/userSlice";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { useAuth } from "@/app/hooks/useAuth";
+import { useLogout } from "@/app/hooks/useLogout";
+import { useAuthSync } from "@/app/hooks/useAuthSync";
 
 import {
   LogOut,
@@ -29,44 +29,16 @@ const Sidebar = () => {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout } = useLogout();
 
-  const dispatch = useDispatch();
-  const router = useRouter();
+  useAuthSync();
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
     if (isLoggingOut) return;
-
     setIsLoggingOut(true);
-    try {
-      const token = localStorage.getItem("token");
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      // Call logout API if tokens exist
-      if (token) {
-        await fetch(`/api/v1/auth/sign-out`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ refreshToken }),
-        }).catch((error) => {
-          console.error("Logout API error:", error);
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Always clear local storage and state
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      dispatch(clearUser());
-
-      // Redirect to home page
-      router.push("/");
-    }
-  }, [dispatch, router, isLoggingOut]);
+    await logout();
+    setIsLoggingOut(false);
+  };
 
   return (
     <div className="w-64 bg-background border-r h-screen p-6 flex flex-col  fixed left-0 top-0 overflow-y-auto">

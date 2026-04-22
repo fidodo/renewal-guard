@@ -24,6 +24,7 @@ import Sidebar from "../components/layout/Sidebar";
 import { setSetting, updateSetting } from "../store/slices/settingSlice";
 import { useAppDispatch, useAppSelector } from "../hooks/redux";
 import { MobileBottomNav } from "../components/layout/MobileBottomNav";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 // Define the settings type
 interface UserSettings {
@@ -73,7 +74,6 @@ export default function SettingsPage() {
     }
   }, [setting]);
 
-  // In your SettingsPage component, update the fetchSettings function:
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -84,18 +84,20 @@ export default function SettingsPage() {
           return;
         }
 
-        const response = await fetch(`/api/v1/settings`);
+        // ✅ Use fetchWithAuth for authenticated request
+        const response = await fetchWithAuth(`/api/v1/settings`, {
+          method: "GET",
+        });
 
-        const errorMessage = `Failed to fetch settings: ${response.status}`;
         if (response.ok) {
           const result = await response.json();
 
           if (!result.success) {
             console.error(
               "API returned error:",
-              result.message || result.error
+              result.message || result.error,
             );
-            setError(errorMessage);
+            setError(result.message || "Failed to fetch settings");
             loadFromLocalStorage();
             return;
           }
@@ -114,15 +116,16 @@ export default function SettingsPage() {
             loadFromLocalStorage();
           }
         } else if (response.status === 401) {
+          console.log("Unauthorized, loading from localStorage");
           loadFromLocalStorage();
         } else {
-          console.error("❌ Failed to fetch settings:", response.status);
+          console.error("Failed to fetch settings:", response.status);
           loadFromLocalStorage();
         }
       } catch (error) {
-        console.error("❌ Error fetching settings:", error);
+        console.error("Error fetching settings:", error);
         loadFromLocalStorage();
-        setError(`❌ Error fetching settings:", ${error}`);
+        setError("Failed to load settings from server");
       }
     };
 
@@ -151,44 +154,35 @@ export default function SettingsPage() {
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
+    setError(null);
 
     try {
       const userId = user?.id;
+      const token = localStorage.getItem("token");
 
-      // Check if user is authenticated
-      const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
-      if (!token) {
+      if (!token || !userId) {
         // Offline mode - save to localStorage only
         localStorage.setItem("userSettings", JSON.stringify(settings));
         dispatch(updateSetting(settings));
         alert("Settings saved locally. Sign in to sync across devices.");
+        setIsSaving(false);
         return;
       }
 
-      const response = await fetch(`/api/v1/settings/${userId}`, {
+      // ✅ Use fetchWithAuth for authenticated request
+      const response = await fetchWithAuth(`/api/v1/settings/${userId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(settings),
       });
 
-      const responseText = await response.text();
+      const result = await response.json();
 
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch {
-        result = { message: responseText };
-      }
-
-      if (response.ok) {
+      if (response.ok && result.success) {
         const updatedSettings = result.data
           ? { ...result.data }
           : { ...settings };
 
-        // ✅ Update all three states:
+        // Update all three states
         dispatch(setSetting(updatedSettings));
         localStorage.setItem("userSettings", JSON.stringify(updatedSettings));
         setLocalSettings(updatedSettings);
@@ -200,6 +194,7 @@ export default function SettingsPage() {
     } catch (error) {
       console.error("Error saving settings:", error);
 
+      // Fallback to local storage
       localStorage.setItem("userSettings", JSON.stringify(settings));
       dispatch(updateSetting(settings));
       alert("Settings saved locally (offline mode)");
@@ -210,7 +205,7 @@ export default function SettingsPage() {
 
   const handleSettingChange = (
     key: keyof UserSettings,
-    value: string | boolean
+    value: string | boolean,
   ) => {
     const newSettings = {
       ...settings,
