@@ -1,4 +1,6 @@
-import React, { useMemo } from "react";
+"use client";
+
+import React, { useMemo, useCallback } from "react";
 import { useAppSelector } from "../../../hooks/redux";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,19 +21,56 @@ import {
   PieLabelRenderProps,
 } from "recharts";
 
+interface Subscription {
+  id: string;
+  _id?: string;
+  name: string;
+  status:
+    | "active"
+    | "expired"
+    | "cancelled"
+    | "deleted"
+    | "inactive"
+    | "pending";
+  category: string;
+  price: { amount: number; currency: string; billingCycle: string };
+  billingDate?: { nextBillingDate: string };
+}
+
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 function Analytics() {
-  // Get subscriptions from Redux - this will auto-update when Redux changes
   const subscriptions = useAppSelector(
     (state) => state.subscription.subscriptions,
-  );
+  ) as Subscription[];
   const isLoading = useAppSelector((state) => state.subscription.loading);
+  const currentDate = useMemo(() => new Date(), []);
 
-  // ✅ Use useMemo to recalculate when subscriptions change
+  const processSubscriptionStatus = useCallback(
+    (sub: Subscription): Subscription => {
+      const nextBillingDate = sub?.billingDate?.nextBillingDate;
+      if (nextBillingDate) {
+        const billingDate = new Date(nextBillingDate);
+        if (sub.status === "active" && billingDate <= currentDate) {
+          return { ...sub, status: "expired" };
+        }
+        if (sub.status === "expired" && billingDate > currentDate) {
+          return { ...sub, status: "active" };
+        }
+      }
+      return sub;
+    },
+    [currentDate],
+  );
+
+  const processedSubscriptions = useMemo(
+    () => subscriptions?.map(processSubscriptionStatus) || [],
+    [subscriptions, processSubscriptionStatus],
+  );
+
   const activeSubscriptions = useMemo(
-    () => subscriptions.filter((sub) => sub.status === "active"),
-    [subscriptions],
+    () => processedSubscriptions.filter((sub) => sub.status === "active"),
+    [processedSubscriptions],
   );
 
   const totalMonthlyCost = useMemo(
@@ -67,14 +106,14 @@ function Analytics() {
 
   const statusCount = useMemo(
     () =>
-      subscriptions.reduce(
+      processedSubscriptions.reduce(
         (acc, sub) => {
           acc[sub.status] = (acc[sub.status] || 0) + 1;
           return acc;
         },
         {} as Record<string, number>,
       ),
-    [subscriptions],
+    [processedSubscriptions],
   );
 
   const statusData = useMemo(
@@ -107,11 +146,16 @@ function Analytics() {
         })
         .sort(
           (a, b) =>
-            new Date(a.billingDate?.nextBillingDate).getTime() -
-            new Date(b.billingDate?.nextBillingDate).getTime(),
+            new Date(a.billingDate!.nextBillingDate).getTime() -
+            new Date(b.billingDate!.nextBillingDate).getTime(),
         ),
     [activeSubscriptions],
   );
+
+  const renderPieLabel = (props: PieLabelRenderProps) => {
+    const percent = (props.percent as number) ?? 0;
+    return `${(percent * 100).toFixed(0)}%`;
+  };
 
   if (isLoading && subscriptions.length === 0) {
     return (
@@ -128,7 +172,7 @@ function Analytics() {
 
   if (!subscriptions || subscriptions.length === 0) {
     return (
-      <div className="ml-0 md:ml-32 lg:ml-64 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="text-muted-foreground">
@@ -147,7 +191,6 @@ function Analytics() {
 
   return (
     <div className="flex-1 p-4 sm:p-6">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Analytics</h1>
         <p className="text-muted-foreground mt-2">
@@ -155,7 +198,6 @@ function Analytics() {
         </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -165,7 +207,7 @@ function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {subscriptions.length}
+              {processedSubscriptions.length}
             </div>
           </CardContent>
         </Card>
@@ -210,9 +252,7 @@ function Analytics() {
         </Card>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-        {/* Cost by Category - Bar Chart */}
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl">
@@ -235,13 +275,7 @@ function Analytics() {
                     fontSize={12}
                   />
                   <YAxis fontSize={12} />
-                  <Tooltip
-                    formatter={(value) => [`$${value}`, "Cost"]}
-                    labelFormatter={(label, payload) => {
-                      const item = payload[0]?.payload;
-                      return item?.fullCategory || label;
-                    }}
-                  />
+                  <Tooltip formatter={(value) => [`$${value}`, "Cost"]} />
                   <Bar dataKey="cost" fill="#8884d8" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -249,7 +283,6 @@ function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Subscription Status - Pie Chart */}
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl">
@@ -265,11 +298,7 @@ function Analytics() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={(props: PieLabelRenderProps) => {
-                      const { percent } = props;
-                      const value = Number(percent ?? 0);
-                      return `${(value * 100).toFixed(0)}%`;
-                    }}
+                    label={renderPieLabel}
                     outerRadius={70}
                     innerRadius={40}
                     fill="#8884d8"
@@ -308,7 +337,6 @@ function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Category Distribution - Pie Chart */}
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl">
@@ -324,11 +352,7 @@ function Analytics() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={(props: PieLabelRenderProps) => {
-                      const { percent } = props;
-                      const value = Number(percent ?? 0);
-                      return `${(value * 100).toFixed(0)}%`;
-                    }}
+                    label={renderPieLabel}
                     outerRadius={70}
                     innerRadius={40}
                     fill="#8884d8"
@@ -341,12 +365,7 @@ function Analytics() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value, name, props) => [
-                      `$${value}`,
-                      props.payload.fullName || name,
-                    ]}
-                  />
+                  <Tooltip formatter={(value) => [`$${value}`, "Spending"]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -367,7 +386,6 @@ function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Renewals */}
         <Card className="col-span-1">
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -405,7 +423,7 @@ function Analytics() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {new Date(
-                            subscription.billingDate?.nextBillingDate,
+                            subscription.billingDate!.nextBillingDate,
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -418,8 +436,6 @@ function Analytics() {
                         </p>
                       </div>
                     </div>
-
-                    {/* AI Suggestion Card */}
                     <div
                       id={`ai-suggestion-${subscription.id}`}
                       className="hidden"
@@ -436,16 +452,12 @@ function Analytics() {
                 </div>
               )}
             </div>
-
-            {/* Batch AI suggestion button */}
             <div className="mt-4 pt-4 border-t">
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full text-xs"
-                onClick={() => {
-                  alert("Batch AI Savings Report coming soon!");
-                }}
+                onClick={() => alert("Batch AI Savings Report coming soon!")}
               >
                 <Sparkles className="h-3 w-3 mr-2" />
                 Get AI Savings Report for All Subscriptions

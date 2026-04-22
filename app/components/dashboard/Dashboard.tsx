@@ -13,9 +13,13 @@ import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscri
 import { Subscription } from "./subscription/SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { refreshAuthToken } from "@/app/hooks/refresh-token";
-
+import { AddSubscriptionOptions } from "./AddSubscriptionOptions";
+import { ImageUploadSubscription } from "./ImageUploadSubscription";
 const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
+  const [showAddOptions, setShowAddOptions] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
   const [error, setError] = useState<string | null>(null);
@@ -143,16 +147,41 @@ const Dashboard = () => {
     setShowForm(true);
   };
 
+  // ✅ Updated: Show options instead of directly opening form
   const handleAddNewClick = () => {
-    setEditingSubscription(null);
-    setFormMode("create");
-    setShowForm(true);
+    setShowAddOptions(true);
   };
 
-  // Simplified - just close the form, Redux already has the data
+  // ✅ Handle image upload selection
+  const handleSelectImageUpload = () => {
+    setShowAddOptions(false);
+    setShowImageUpload(true);
+  };
+
+  // ✅ Handle manual form selection
+  const handleSelectManualForm = () => {
+    setShowAddOptions(false);
+    setShowManualForm(true);
+  };
+
+  // ✅ Handle image upload success
+  const handleImageUploadSuccess = () => {
+    setShowImageUpload(false);
+    fetchSubscriptions(); // Refresh the list
+  };
+
+  // ✅ Handle manual form success
+  const handleManualFormSuccess = () => {
+    setShowManualForm(false);
+    fetchSubscriptions(); // Refresh the list
+  };
+
+  // ✅ Handle edit form success
   const handleFormSuccess = useCallback(() => {
     setShowForm(false);
     setEditingSubscription(null);
+    fetchSubscriptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFormCancel = () => {
@@ -160,7 +189,7 @@ const Dashboard = () => {
     setEditingSubscription(null);
   };
 
-  // Fetch subscriptions only once on initial load
+  // Fetch subscriptions from backend
   const fetchSubscriptions = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
@@ -171,7 +200,7 @@ const Dashboard = () => {
         return;
       }
 
-      const response = await fetch(`/api/v1/subscriptions`, {
+      const response = await fetch(`/api/v1/subscriptions/user`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -184,7 +213,7 @@ const Dashboard = () => {
         if (refreshSuccess) {
           const newToken = localStorage.getItem("token");
           if (newToken) {
-            const retryResponse = await fetch(`/api/v1/subscriptions`, {
+            const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -264,6 +293,7 @@ const Dashboard = () => {
         alert("Failed to cancel subscription");
       } else {
         alert("Subscription cancelled successfully!");
+        fetchSubscriptions(); // Refresh to update UI
       }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
@@ -311,6 +341,7 @@ const Dashboard = () => {
         alert("Failed to delete subscription");
       } else {
         alert("Subscription deleted successfully!");
+        fetchSubscriptions(); // Refresh to update UI
       }
     } catch (error) {
       console.error("Error deleting subscription:", error);
@@ -508,12 +539,37 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* Edit Form Modal */}
       {showForm && (
         <SubscriptionForm
           mode={formMode}
           subscription={editingSubscription || undefined}
           onCancel={handleFormCancel}
           onSuccess={handleFormSuccess}
+        />
+      )}
+
+      {/* Add Subscription Options Modal */}
+      <AddSubscriptionOptions
+        isOpen={showAddOptions}
+        onClose={() => setShowAddOptions(false)}
+        onSelectImageUpload={handleSelectImageUpload}
+        onSelectManualForm={handleSelectManualForm}
+      />
+
+      {/* Image Upload Modal */}
+      <ImageUploadSubscription
+        isOpen={showImageUpload}
+        onClose={() => setShowImageUpload(false)}
+        onSuccess={handleImageUploadSuccess}
+      />
+
+      {/* Manual Form Modal */}
+      {showManualForm && (
+        <SubscriptionForm
+          mode="create"
+          onCancel={() => setShowManualForm(false)}
+          onSuccess={handleManualFormSuccess}
         />
       )}
     </div>
