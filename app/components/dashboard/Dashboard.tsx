@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../../hooks/redux";
 import { Button } from "@/components/ui/button";
 import SubscriptionCard from "./subscription/SubscriptionCard";
@@ -7,8 +7,8 @@ import SubscriptionForm from "./subscription/SubscriptionForm";
 import {
   setSubscriptions,
   updateSubscriptionStatus,
+  deleteSubscription,
 } from "../../store/slices/subscriptionSlice";
-
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 import { Subscription } from "./subscription/SubscriptionForm";
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
@@ -18,7 +18,6 @@ const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [cancellingIds, setCancellingIds] = useState<Set<string>>(new Set());
   const dispatch = useAppDispatch();
-
   const [error, setError] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] =
     useState<Subscription | null>(null);
@@ -27,87 +26,84 @@ const Dashboard = () => {
     "autoRenew" | "nextBillingDate" | "name"
   >("nextBillingDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  interface ApiResponse<T> {
-    success: boolean;
-    message?: string;
-    error?: string;
-    data?: T;
-  }
-
-  // Get subscriptions from Redux store
   const subscriptions = useAppSelector(
     (state) => state.subscription.subscriptions,
   );
-  const loading = useAppSelector((state) => state.subscription.loading);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const currentDate = new Date();
 
-  // Helper function to process subscription status
-  const processSubscriptionStatus = (sub: Subscription): Subscription => {
-    const nextBillingDate = sub?.billingDate?.nextBillingDate;
-
-    if (nextBillingDate) {
-      const billingDate = new Date(nextBillingDate);
-
-      if (sub.status === "active" && billingDate <= currentDate) {
-        return { ...sub, status: "expired" };
+  const processSubscriptionStatus = useCallback(
+    (sub: Subscription): Subscription => {
+      const nextBillingDate = sub?.billingDate?.nextBillingDate;
+      if (nextBillingDate) {
+        const billingDate = new Date(nextBillingDate);
+        if (sub.status === "active" && billingDate <= currentDate) {
+          return { ...sub, status: "expired" };
+        }
+        if (sub.status === "expired" && billingDate > currentDate) {
+          return { ...sub, status: "active" };
+        }
       }
-
-      if (sub.status === "expired" && billingDate > currentDate) {
-        return { ...sub, status: "active" };
-      }
-    }
-
-    return sub;
-  };
-
-  const processedSubscriptions = subscriptions?.map(processSubscriptionStatus);
-
-  // Filter subscriptions by status
-  const activeSubscriptions = processedSubscriptions?.filter(
-    (sub) => sub.status === "active",
+      return sub;
+    },
+    [currentDate],
   );
-  const expiredSubscriptions = processedSubscriptions?.filter(
-    (sub) => sub.status === "expired",
+
+  const processedSubscriptions = useMemo(
+    () => subscriptions?.map(processSubscriptionStatus) || [],
+    [subscriptions, processSubscriptionStatus],
   );
-  const cancelledSubscriptions = processedSubscriptions?.filter(
-    (sub) => sub.status === "cancelled",
+
+  const activeSubscriptions = useMemo(
+    () => processedSubscriptions.filter((sub) => sub.status === "active"),
+    [processedSubscriptions],
+  );
+
+  const expiredSubscriptions = useMemo(
+    () => processedSubscriptions.filter((sub) => sub.status === "expired"),
+    [processedSubscriptions],
+  );
+
+  const cancelledSubscriptions = useMemo(
+    () => processedSubscriptions.filter((sub) => sub.status === "cancelled"),
+    [processedSubscriptions],
   );
 
   const sortedActiveSubscriptions = useMemo(() => {
-    return [...(activeSubscriptions ?? [])].sort((a, b) => {
+    return [...activeSubscriptions].sort((a, b) => {
       let aValue, bValue;
-
       switch (sortBy) {
         case "autoRenew":
           aValue = a.autoRenew ? 1 : 0;
           bValue = b.autoRenew ? 1 : 0;
           break;
-
         case "nextBillingDate":
           aValue = new Date(a.billingDate.nextBillingDate).getTime();
           bValue = new Date(b.billingDate.nextBillingDate).getTime();
           break;
-
         case "name":
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-
         default:
           return 0;
       }
-
-      if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
+      return sortOrder === "asc"
+        ? aValue < bValue
+          ? -1
+          : aValue > bValue
+            ? 1
+            : 0
+        : aValue > bValue
+          ? -1
+          : aValue < bValue
+            ? 1
+            : 0;
     });
   }, [activeSubscriptions, sortBy, sortOrder]);
 
-  // Handle sort button click
   const handleSortClick = (
     newSortBy: "autoRenew" | "nextBillingDate" | "name",
   ) => {
@@ -119,11 +115,8 @@ const Dashboard = () => {
     }
   };
 
-  // Get sort icon based on current sort state
   const getSortIcon = (column: "autoRenew" | "nextBillingDate" | "name") => {
-    if (sortBy !== column) {
-      return <ArrowUpDown className="w-4 h-4" />;
-    }
+    if (sortBy !== column) return <ArrowUpDown className="w-4 h-4" />;
     return sortOrder === "asc" ? (
       <ArrowUp className="w-4 h-4" />
     ) : (
@@ -131,7 +124,6 @@ const Dashboard = () => {
     );
   };
 
-  // Get sort button label
   const getSortButtonLabel = (
     column: "autoRenew" | "nextBillingDate" | "name",
   ) => {
@@ -140,56 +132,46 @@ const Dashboard = () => {
       nextBillingDate: "Next Billing",
       name: "Name",
     };
-
-    if (sortBy === column) {
+    if (sortBy === column)
       return `${labels[column]} ${sortOrder === "asc" ? "↑" : "↓"}`;
-    }
-
     return labels[column];
   };
 
-  // Handle Edit button click from SubscriptionCard
   const handleEditClick = (subscription: Subscription) => {
     setEditingSubscription(subscription);
     setFormMode("edit");
     setShowForm(true);
   };
 
-  // Handle Add New Subscription button click
   const handleAddNewClick = () => {
     setEditingSubscription(null);
     setFormMode("create");
     setShowForm(true);
   };
 
-  // Handle form success
-  const handleFormSuccess = () => {
+  // Simplified - just close the form, Redux already has the data
+  const handleFormSuccess = useCallback(() => {
     setShowForm(false);
     setEditingSubscription(null);
+  }, []);
 
-    setTimeout(() => {
-      fetchSubscriptions();
-    }, 100);
-  };
-
-  // Handle form cancel
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingSubscription(null);
   };
 
-  // Fetch subscriptions from backend
-  const fetchSubscriptions = async () => {
+  // Fetch subscriptions only once on initial load
+  const fetchSubscriptions = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-
       if (!token) {
         setError("Please log in to view subscriptions");
         dispatch(setSubscriptions([]));
+        setIsInitialLoading(false);
         return;
       }
 
-      const response = await fetch(`/api/v1/subscriptions/user`, {
+      const response = await fetch(`/api/v1/subscriptions`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -199,152 +181,94 @@ const Dashboard = () => {
 
       if (response.status === 401) {
         const refreshSuccess = await refreshAuthToken();
-
         if (refreshSuccess) {
           const newToken = localStorage.getItem("token");
           if (newToken) {
-            const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
+            const retryResponse = await fetch(`/api/v1/subscriptions`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${newToken}`,
               },
             });
-
             if (retryResponse.ok) {
               const result = await retryResponse.json();
-              await handleSuccessfulResponse(result);
-              return;
+              if (result.success && result.data) {
+                dispatch(
+                  setSubscriptions(
+                    Array.isArray(result.data) ? result.data : [result.data],
+                  ),
+                );
+              }
             }
           }
         }
-
-        setError("Session expired. Please log in again.");
-        dispatch(setSubscriptions([]));
+        setIsInitialLoading(false);
         return;
       }
 
       if (!response.ok) {
-        const errorMessage = `Failed to fetch subscriptions: ${response.status}`;
-        console.error("Failed to fetch subscriptions:", response.status);
-        setError(errorMessage);
-        dispatch(setSubscriptions([]));
-        return;
+        throw new Error(`Failed to fetch subscriptions: ${response.status}`);
       }
 
       const result = await response.json();
-      await handleSuccessfulResponse(result);
-    } catch (error) {
-      console.error("❌ Error fetching subscriptions:", error);
-      if (error instanceof Error) {
-        setError(`Network error: ${error.message}`);
-      } else {
-        setError("An unexpected error occurred");
+      if (result.success && result.data) {
+        const subscriptionsData = Array.isArray(result.data)
+          ? result.data
+          : [result.data];
+        dispatch(setSubscriptions(subscriptionsData));
       }
-      dispatch(setSubscriptions([]));
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+      setError("Failed to load subscriptions");
+    } finally {
+      setIsInitialLoading(false);
     }
-  };
-
-  // Helper function to handle successful responses
-  const handleSuccessfulResponse = async (
-    result: ApiResponse<Subscription[]>,
-  ) => {
-    if (!result.success) {
-      console.error("API returned error:", result.message || result.error);
-      setError(result.message || "Failed to fetch subscriptions");
-      dispatch(setSubscriptions([]));
-      return;
-    }
-
-    if (result.success && result.data) {
-      const subscriptionsData = Array.isArray(result.data)
-        ? result.data
-        : [result.data];
-
-      dispatch(setSubscriptions(subscriptionsData));
-    } else {
-      console.warn("No subscriptions data found in response");
-      dispatch(setSubscriptions([]));
-    }
-  };
+  }, [dispatch]);
 
   useEffect(() => {
     fetchSubscriptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchSubscriptions]);
 
   const handleCancelSubscription = async (id: string) => {
+    const subscriptionToCancel = subscriptions.find(
+      (sub) => sub.id === id || sub._id === id,
+    );
+    if (!subscriptionToCancel) return;
+
+    const isConfirmed = window.confirm(
+      "Are you sure you want to cancel this subscription?",
+    );
+    if (!isConfirmed) return;
+
+    setCancellingIds((prev) => new Set(prev).add(id));
+    dispatch(updateSubscriptionStatus({ id, status: "cancelled" }));
+
     try {
-      const isConfirmed = window.confirm(
-        "Are you sure you want to cancel this subscription?",
-      );
-      if (!isConfirmed) return;
-
-      setCancellingIds((prev) => new Set(prev).add(id));
-
       const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to perform this action");
-        return;
-      }
+      if (!token) throw new Error("No token");
 
-      const response = await fetch(` /api/v1/subscriptions/${id}/cancel`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `/api/v1/subscriptions/${subscriptionToCancel._id}/cancel`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
-      if (response.status === 401) {
-        const refreshSuccess = await refreshAuthToken();
-        if (refreshSuccess) {
-          const newToken = localStorage.getItem("token");
-          if (newToken) {
-            const retryResponse = await fetch(
-              `/api/v1/subscriptions/${id}/cancel`,
-              {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${newToken}`,
-                },
-              },
-            );
-
-            if (retryResponse.ok) {
-              await retryResponse.json();
-
-              dispatch(updateSubscriptionStatus({ id, status: "cancelled" }));
-              alert("Subscription cancelled successfully!");
-              return;
-            }
-          }
-        }
-
-        alert("Session expired. Please log in again.");
-        return;
-      }
-
-      if (response.ok) {
-        await response.json();
-
-        dispatch(updateSubscriptionStatus({ id, status: "cancelled" }));
-        alert("Subscription cancelled successfully!");
+      if (!response.ok) {
+        dispatch(updateSubscriptionStatus({ id, status: "active" }));
+        alert("Failed to cancel subscription");
       } else {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Failed to cancel subscription: ${response.status}`,
-        );
+        alert("Subscription cancelled successfully!");
       }
     } catch (error) {
-      console.error("❌ Error cancelling subscription:", error);
-      if (error instanceof Error) {
-        alert(error.message || "Failed to cancel subscription");
-      } else {
-        alert("Failed to cancel subscription");
-      }
+      console.error("Error cancelling subscription:", error);
+      dispatch(updateSubscriptionStatus({ id, status: "active" }));
+      alert("Failed to cancel subscription");
     } finally {
       setCancellingIds((prev) => {
         const newSet = new Set(prev);
@@ -355,78 +279,47 @@ const Dashboard = () => {
   };
 
   const handleDeleteSubscription = async (id: string) => {
+    const subscriptionToDelete = subscriptions.find(
+      (sub) => sub.id === id || sub._id === id,
+    );
+    if (!subscriptionToDelete) return;
+
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this subscription? This action cannot be undone.",
+    );
+    if (!isConfirmed) return;
+
+    dispatch(deleteSubscription(id));
+
     try {
-      const isConfirmed = window.confirm(
-        "Are you sure you want to delete this subscription? This action cannot be undone.",
-      );
-      if (!isConfirmed) return;
-
       const token = localStorage.getItem("token");
-      if (!token) {
-        alert("Please log in to perform this action");
-        return;
-      }
+      if (!token) throw new Error("No token");
 
-      const response = await fetch(`/api/v1/subscriptions/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `/api/v1/subscriptions/${subscriptionToDelete._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
-      if (response.status === 401) {
-        const refreshSuccess = await refreshAuthToken();
-        if (refreshSuccess) {
-          const newToken = localStorage.getItem("token");
-          if (newToken) {
-            const retryResponse = await fetch(`/api/v1/subscriptions/${id}`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${newToken}`,
-              },
-            });
-
-            if (retryResponse.ok) {
-              await retryResponse.json();
-
-              dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
-              alert("Subscription deleted successfully!");
-              fetchSubscriptions();
-              return;
-            }
-          }
-        }
-
-        alert("Session expired. Please log in again.");
-        return;
-      }
-
-      if (response.ok) {
-        await response.json();
-
-        dispatch(updateSubscriptionStatus({ id, status: "deleted" }));
-        alert("Subscription deleted successfully!");
-        fetchSubscriptions();
+      if (!response.ok) {
+        await fetchSubscriptions();
+        alert("Failed to delete subscription");
       } else {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Failed to delete subscription: ${response.status}`,
-        );
+        alert("Subscription deleted successfully!");
       }
     } catch (error) {
-      console.error("❌ Error deleting subscription:", error);
-      if (error instanceof Error) {
-        alert(error.message || "Failed to delete subscription");
-      } else {
-        alert("Failed to delete subscription");
-      }
+      console.error("Error deleting subscription:", error);
+      await fetchSubscriptions();
+      alert("Failed to delete subscription");
     }
   };
 
-  if (loading) {
+  if (isInitialLoading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
         <div className="text-center">
@@ -437,31 +330,14 @@ const Dashboard = () => {
     );
   }
 
-  const clearError = () => {
-    setError(null);
-  };
-
   return (
     <div className="flex-1 p-4 sm:p-6">
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex justify-between items-center">
-          <div className="flex items-center">
-            <svg
-              className="w-5 h-5 text-red-500 mr-2"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-red-800">{error}</span>
-          </div>
+          <span className="text-red-800">{error}</span>
           <button
-            onClick={clearError}
-            className="text-red-500 hover:text-red-700 focus:outline-none"
+            onClick={() => setError(null)}
+            className="text-red-500 hover:text-red-700"
           >
             <svg
               className="w-4 h-4"
@@ -480,15 +356,11 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* UPDATED HEADER SECTION - Mobile Optimized */}
       <div className="flex flex-col gap-4 mb-6">
-        {/* First Row: Title only */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-center sm:text-left">
+          <h2 className="text-xl sm:text-2xl font-bold">
             UPCOMING RENEWALS ({sortedActiveSubscriptions.length})
           </h2>
-
-          {/* Desktop Version - Hidden on mobile */}
           <div className="hidden sm:flex items-center gap-4">
             <div className="flex gap-2">
               <Button
@@ -523,58 +395,47 @@ const Dashboard = () => {
               onClick={handleAddNewClick}
               className="flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" />
-              Add New Subscription
+              <Plus className="w-4 h-4" /> Add New Subscription
             </Button>
           </div>
         </div>
 
-        {/* Mobile Only: Sort Icons and Add Button */}
         <div className="sm:hidden flex flex-col gap-3">
-          {/* Sort Buttons Row */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("autoRenew")}
-              className="flex items-center gap-1 flex-1 justify-center"
+              className="flex-1"
             >
               {getSortIcon("autoRenew")}
-              <span className="text-xs">Auto Renew</span>
+              <span className="text-xs ml-1">Auto Renew</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("nextBillingDate")}
-              className="flex items-center gap-1 flex-1 justify-center"
+              className="flex-1"
             >
               {getSortIcon("nextBillingDate")}
-              <span className="text-xs">Next Billing</span>
+              <span className="text-xs ml-1">Next Billing</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleSortClick("name")}
-              className="flex items-center gap-1 flex-1 justify-center"
+              className="flex-1"
             >
               {getSortIcon("name")}
-              <span className="text-xs">Name</span>
+              <span className="text-xs ml-1">Name</span>
             </Button>
           </div>
-
-          {/* Add New Button - Full width on mobile */}
-          <Button
-            onClick={handleAddNewClick}
-            className="flex items-center gap-2 w-full justify-center"
-            size="sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Subscription
+          <Button onClick={handleAddNewClick} className="w-full" size="sm">
+            <Plus className="w-4 h-4 mr-2" /> Add New Subscription
           </Button>
         </div>
       </div>
 
-      {/* Active Subscriptions Section */}
       <section className="mb-8">
         <h3 className="text-lg font-semibold mb-4">Active Subscriptions</h3>
         <div className="grid gap-4">
@@ -585,7 +446,7 @@ const Dashboard = () => {
                 subscription={subscription}
                 onCancel={handleCancelSubscription}
                 onDelete={handleDeleteSubscription}
-                isCancelling={cancellingIds.has(subscription.id || "")}
+                isCancelling={cancellingIds.has(subscription.id)}
                 onEdit={() => handleEditClick(subscription)}
               />
             ))
@@ -598,32 +459,23 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Other Subscription Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Expired Subscriptions */}
-        {expiredSubscriptions?.length > 0 && (
-          <section>
-            <ConditionalPaginatedSubscriptions
-              title="Expired Subscriptions"
-              subscriptions={expiredSubscriptions}
-              onDelete={handleDeleteSubscription}
-            />
-          </section>
+        {expiredSubscriptions.length > 0 && (
+          <ConditionalPaginatedSubscriptions
+            title="Expired Subscriptions"
+            subscriptions={expiredSubscriptions}
+            onDelete={handleDeleteSubscription}
+          />
         )}
-
-        {/* Cancelled Subscriptions */}
-        {cancelledSubscriptions?.length > 0 && (
-          <section>
-            <ConditionalPaginatedSubscriptions
-              title="Cancelled Subscriptions"
-              subscriptions={cancelledSubscriptions}
-              onDelete={handleDeleteSubscription}
-            />
-          </section>
+        {cancelledSubscriptions.length > 0 && (
+          <ConditionalPaginatedSubscriptions
+            title="Cancelled Subscriptions"
+            subscriptions={cancelledSubscriptions}
+            onDelete={handleDeleteSubscription}
+          />
         )}
       </div>
 
-      {/* All Subscriptions Summary */}
       <section className="mt-8 pt-6 border-t">
         <h3 className="text-lg font-semibold mb-4">
           All Subscriptions Summary
@@ -631,32 +483,31 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
           <div className="bg-green-50 p-3 sm:p-4 rounded-lg border">
             <div className="text-xl sm:text-2xl font-bold text-green-600">
-              {activeSubscriptions?.length}
+              {activeSubscriptions.length}
             </div>
             <div className="text-xs sm:text-sm text-green-800">Active</div>
           </div>
           <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg border">
             <div className="text-xl sm:text-2xl font-bold text-yellow-600">
-              {expiredSubscriptions?.length}
+              {expiredSubscriptions.length}
             </div>
             <div className="text-xs sm:text-sm text-yellow-800">Expired</div>
           </div>
           <div className="bg-red-50 p-3 sm:p-4 rounded-lg border">
             <div className="text-xl sm:text-2xl font-bold text-red-600">
-              {cancelledSubscriptions?.length}
+              {cancelledSubscriptions.length}
             </div>
             <div className="text-xs sm:text-sm text-red-800">Cancelled</div>
           </div>
           <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border">
             <div className="text-xl sm:text-2xl font-bold text-blue-600">
-              {subscriptions?.length}
+              {subscriptions.length}
             </div>
             <div className="text-xs sm:text-sm text-blue-800">Total</div>
           </div>
         </div>
       </section>
 
-      {/* Subscription Form Modal */}
       {showForm && (
         <SubscriptionForm
           mode={formMode}

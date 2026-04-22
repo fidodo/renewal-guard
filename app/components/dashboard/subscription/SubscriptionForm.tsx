@@ -1,4 +1,4 @@
-// components/dashboard/SubscriptionForm.tsx
+"use client";
 import { useState } from "react";
 import {
   Dialog,
@@ -23,11 +23,9 @@ import { useAppDispatch } from "@/app/hooks/redux";
 import {
   createSubscription,
   updateSubscription,
-  setSubscriptions,
 } from "@/app/store/slices/subscriptionSlice";
-import { AppDispatch } from "@/app/store/store";
+import { refreshAuthToken } from "@/app/hooks/refresh-token";
 
-// Pure subscription data (from backend / DB)
 export interface Subscription {
   _id?: string;
   id: string;
@@ -52,7 +50,6 @@ export interface Subscription {
     | "inactive"
     | "pending"
     | "deleted";
-
   paymentMethod: string;
   autoRenew: boolean;
   sendReminders: boolean;
@@ -62,7 +59,6 @@ export interface Subscription {
   importance?: "low" | "medium" | "high" | "critical";
 }
 
-// Form data type (for the form state)
 interface SubscriptionFormData {
   name: string;
   serviceName: string;
@@ -80,18 +76,15 @@ interface SubscriptionFormData {
   phone: string;
 }
 
-// Component props (UI-related actions)
 export interface SubscriptionFormProps {
   subscription?: Subscription;
   onCancel: () => void;
-  onSubmit?: (data: Omit<Subscription, "id" | "status">) => void;
   mode?: "create" | "edit";
   onSuccess?: () => void;
 }
 
 const SubscriptionForm = ({
   onSuccess,
-  onSubmit,
   onCancel,
   subscription,
   mode = "create",
@@ -113,12 +106,19 @@ const SubscriptionForm = ({
     notes: subscription?.notes || "",
     phone: subscription?.phone || "",
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useAppDispatch();
+
+  const getToken = () => {
+    return localStorage.getItem("token") || localStorage.getItem("authToken");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const subscriptionData: Omit<Subscription, "id" | "status"> = {
+    const subscriptionData = {
       name: formData.name,
       serviceName: formData.serviceName || formData.name,
       description: formData.description,
@@ -139,14 +139,13 @@ const SubscriptionForm = ({
       importance: "medium" as const,
       phone: formData.phone,
       tags: [],
+      status: "active" as const,
     };
 
     try {
-      const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
-
+      let token = getToken();
       if (!token) {
-        throw new Error("Token not found");
+        throw new Error("Authentication token not found");
       }
 
       const headers: HeadersInit = {
@@ -155,70 +154,65 @@ const SubscriptionForm = ({
       };
 
       let response;
-
       const subscriptionId = subscription?._id || subscription?.id;
 
       if (mode === "edit" && subscription) {
-        // Update existing subscription
         response = await fetch(`/api/v1/subscriptions/${subscriptionId}`, {
           method: "PUT",
           headers,
           body: JSON.stringify(subscriptionData),
         });
       } else {
-        // Create new subscription
         response = await fetch(`/api/v1/subscriptions`, {
           method: "POST",
           headers,
-
           body: JSON.stringify(subscriptionData),
         });
       }
 
+      if (response.status === 401) {
+        const refreshSuccess = await refreshAuthToken();
+        if (refreshSuccess) {
+          token = getToken();
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+            response = await fetch(
+              mode === "edit" && subscription
+                ? `/api/v1/subscriptions/${subscriptionId}`
+                : `/api/v1/subscriptions`,
+              {
+                method: mode === "edit" ? "PUT" : "POST",
+                headers,
+                body: JSON.stringify(subscriptionData),
+              },
+            );
+          }
+        }
+      }
+
       if (!response.ok) {
-        console.warn("Response not ok:", response);
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save subscription");
       }
 
       const result = await response.json();
+      const savedSubscription = result.data?.subscription || result.data;
 
-      // Update Redux store with the response from backend
       if (mode === "edit" && subscription) {
-        dispatch(updateSubscription(result.data));
+        dispatch(updateSubscription(savedSubscription));
       } else {
-        dispatch(createSubscription(result.data));
-      }
-      await fetchAllSubscriptions(dispatch, token);
-      // If there's still a prop callback (for backward compatibility), call it
-      if (onSubmit) {
-        onSubmit(result.data);
+        dispatch(createSubscription(savedSubscription));
       }
 
       onSuccess?.();
-
-      // Close the form
       onCancel();
     } catch (error) {
       console.error("Error saving subscription:", error);
-    }
-  };
-
-  const fetchAllSubscriptions = async (
-    dispatch: AppDispatch,
-    token: string
-  ) => {
-    try {
-      const response = await fetch(`/api/v1/subscriptions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        dispatch(setSubscriptions(result.data || result));
-      }
-    } catch (error) {
-      console.error("Error fetching subscriptions:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to save subscription",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -226,20 +220,17 @@ const SubscriptionForm = ({
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Your Dialog Title</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Edit Subscription" : "Create New Subscription"}
+          </DialogTitle>
           <DialogDescription>
-            {/* Add a meaningful description */}
             {mode === "edit"
-              ? "Edit existing subscription"
-              : "Create a new subscription"}
+              ? "Update your subscription details below"
+              : "Add a new subscription to track"}
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6"
-          data-testid="subscription-form"
-        >
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Subscription Name *</Label>
@@ -247,16 +238,13 @@ const SubscriptionForm = ({
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Netflix Premium"
                 required
+                disabled={isSubmitting}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="serviceName">Service Name *</Label>
               <Input
@@ -270,6 +258,7 @@ const SubscriptionForm = ({
                 }
                 placeholder="Netflix"
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -286,6 +275,7 @@ const SubscriptionForm = ({
                 }))
               }
               placeholder="Subscription description..."
+              disabled={isSubmitting}
             />
           </div>
 
@@ -298,6 +288,7 @@ const SubscriptionForm = ({
                   setFormData((prev) => ({ ...prev, category: value }))
                 }
                 required
+                disabled={isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -318,7 +309,6 @@ const SubscriptionForm = ({
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="priceAmount">Price *</Label>
               <Input
@@ -335,6 +325,7 @@ const SubscriptionForm = ({
                 }
                 placeholder="8.99"
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -348,6 +339,7 @@ const SubscriptionForm = ({
                   setFormData((prev) => ({ ...prev, currency: value }))
                 }
                 required
+                disabled={isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select currency" />
@@ -366,7 +358,6 @@ const SubscriptionForm = ({
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="billingCycle">Billing Cycle *</Label>
               <Select
@@ -375,6 +366,7 @@ const SubscriptionForm = ({
                   setFormData((prev) => ({ ...prev, billingCycle: value }))
                 }
                 required
+                disabled={isSubmitting}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select billing cycle" />
@@ -403,9 +395,9 @@ const SubscriptionForm = ({
                   }))
                 }
                 required
+                disabled={isSubmitting}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="nextBillingDate">Next Billing Date *</Label>
               <Input
@@ -419,6 +411,7 @@ const SubscriptionForm = ({
                   }))
                 }
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -436,9 +429,9 @@ const SubscriptionForm = ({
                   }))
                 }
                 placeholder="Credit Card, PayPal, etc."
+                disabled={isSubmitting}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="phone">Phone (Optional)</Label>
               <Input
@@ -448,6 +441,7 @@ const SubscriptionForm = ({
                   setFormData((prev) => ({ ...prev, phone: e.target.value }))
                 }
                 placeholder="+1 (555) 123-4567"
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -461,6 +455,7 @@ const SubscriptionForm = ({
                 setFormData((prev) => ({ ...prev, notes: e.target.value }))
               }
               placeholder="Optional notes..."
+              disabled={isSubmitting}
             />
           </div>
 
@@ -471,30 +466,37 @@ const SubscriptionForm = ({
                 onCheckedChange={(checked) =>
                   setFormData((prev) => ({ ...prev, autoRenew: checked }))
                 }
+                disabled={isSubmitting}
               />
-              <Label htmlFor="auto-renew">Auto-renew</Label>
+              <Label>Auto-renew</Label>
             </div>
-
             <div className="flex items-center space-x-2">
               <Switch
                 checked={formData.sendReminders}
                 onCheckedChange={(checked) =>
                   setFormData((prev) => ({ ...prev, sendReminders: checked }))
                 }
+                disabled={isSubmitting}
               />
-              <Label htmlFor="send-reminders">Send reminders</Label>
+              <Label>Send reminders</Label>
             </div>
           </div>
 
-          <div
-            className="flex justify-end space-x-3 pt-4"
-            data-testid="create-button"
-          >
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button type="submit">
-              {mode === "edit" ? "Update Subscription" : "Create Subscription"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? "Saving..."
+                : mode === "edit"
+                  ? "Update Subscription"
+                  : "Create Subscription"}
             </Button>
           </div>
         </form>

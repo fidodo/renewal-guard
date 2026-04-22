@@ -204,7 +204,7 @@ export const updateSubscription = async (req, res, next) => {
     subscription = await Subscription.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     res.status(200).json({
@@ -299,6 +299,7 @@ export const deleteSubscription = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Subscription deleted permanently",
+      deletedId: req.params.id,
     });
   } catch (error) {
     next(error);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useAppSelector } from "../../../hooks/redux";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,66 +22,98 @@ import {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 function Analytics() {
+  // Get subscriptions from Redux - this will auto-update when Redux changes
   const subscriptions = useAppSelector(
-    (state) => state.subscription.subscriptions
+    (state) => state.subscription.subscriptions,
   );
-
   const isLoading = useAppSelector((state) => state.subscription.loading);
 
-  const activeSubscriptions = subscriptions.filter(
-    (sub) => sub.status === "active"
-  );
-  const totalMonthlyCost = subscriptions
-    .filter((sub) => sub.status === "active")
-    .reduce((sum, sub) => sum + (sub.price.amount || 0), 0);
-
-  const categoryBreakdown = subscriptions
-    .filter((sub) => sub.status === "active")
-    .reduce((acc, sub) => {
-      const category = sub.category || "Uncategorized";
-      acc[category] = (acc[category] || 0) + (sub.price.amount || 0);
-      return acc;
-    }, {} as Record<string, number>);
-
-  const categoryData = Object.entries(categoryBreakdown).map(
-    ([name, value]) => ({
-      name,
-      value: parseFloat(value.toFixed(2)),
-    })
+  // ✅ Use useMemo to recalculate when subscriptions change
+  const activeSubscriptions = useMemo(
+    () => subscriptions.filter((sub) => sub.status === "active"),
+    [subscriptions],
   );
 
-  const statusCount = subscriptions.reduce((acc, sub) => {
-    acc[sub.status] = (acc[sub.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const statusData = Object.entries(statusCount).map(([name, value]) => ({
-    name: name.charAt(0).toUpperCase() + name.slice(1),
-    value,
-  }));
-
-  const monthlyCostByCategory = Object.entries(categoryBreakdown).map(
-    ([category, cost]) => ({
-      category,
-      cost: parseFloat(cost.toFixed(2)),
-    })
+  const totalMonthlyCost = useMemo(
+    () =>
+      activeSubscriptions.reduce(
+        (sum, sub) => sum + (sub.price.amount || 0),
+        0,
+      ),
+    [activeSubscriptions],
   );
 
-  const upcomingRenewals = activeSubscriptions
-    .filter((sub) => {
-      if (!sub.billingDate?.nextBillingDate) return false;
-      const renewalDate = new Date(sub.billingDate.nextBillingDate);
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-      return renewalDate <= thirtyDaysFromNow;
-    })
-    .sort(
-      (a, b) =>
-        new Date(a.billingDate?.nextBillingDate).getTime() -
-        new Date(b.billingDate?.nextBillingDate).getTime()
-    );
+  const categoryBreakdown = useMemo(
+    () =>
+      activeSubscriptions.reduce(
+        (acc, sub) => {
+          const category = sub.category || "Uncategorized";
+          acc[category] = (acc[category] || 0) + (sub.price.amount || 0);
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    [activeSubscriptions],
+  );
 
-  if (isLoading) {
+  const categoryData = useMemo(
+    () =>
+      Object.entries(categoryBreakdown).map(([name, value]) => ({
+        name,
+        value: parseFloat(value.toFixed(2)),
+      })),
+    [categoryBreakdown],
+  );
+
+  const statusCount = useMemo(
+    () =>
+      subscriptions.reduce(
+        (acc, sub) => {
+          acc[sub.status] = (acc[sub.status] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    [subscriptions],
+  );
+
+  const statusData = useMemo(
+    () =>
+      Object.entries(statusCount).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value,
+      })),
+    [statusCount],
+  );
+
+  const monthlyCostByCategory = useMemo(
+    () =>
+      Object.entries(categoryBreakdown).map(([category, cost]) => ({
+        category,
+        cost: parseFloat(cost.toFixed(2)),
+      })),
+    [categoryBreakdown],
+  );
+
+  const upcomingRenewals = useMemo(
+    () =>
+      activeSubscriptions
+        .filter((sub) => {
+          if (!sub.billingDate?.nextBillingDate) return false;
+          const renewalDate = new Date(sub.billingDate.nextBillingDate);
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+          return renewalDate <= thirtyDaysFromNow;
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.billingDate?.nextBillingDate).getTime() -
+            new Date(b.billingDate?.nextBillingDate).getTime(),
+        ),
+    [activeSubscriptions],
+  );
+
+  if (isLoading && subscriptions.length === 0) {
     return (
       <div className="flex-1 p-4 sm:p-6">
         <div className="flex items-center justify-center h-64">
@@ -112,13 +144,14 @@ function Analytics() {
       </div>
     );
   }
+
   return (
     <div className="flex-1 p-4 sm:p-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Analytics</h1>
         <p className="text-muted-foreground mt-2">
-          Insights into your subscriptions
+          Insights into your subscriptions (Updated in real-time)
         </p>
       </div>
 
@@ -355,9 +388,8 @@ function Analytics() {
                     <div
                       className="flex justify-between items-center p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer group"
                       onClick={() => {
-                        // Optional: Expand/collapse AI suggestion
                         const aiCard = document.getElementById(
-                          `ai-suggestion-${subscription.id}`
+                          `ai-suggestion-${subscription.id}`,
                         );
                         if (aiCard) {
                           aiCard.classList.toggle("hidden");
@@ -373,7 +405,7 @@ function Analytics() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {new Date(
-                            subscription.billingDate?.nextBillingDate
+                            subscription.billingDate?.nextBillingDate,
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -387,7 +419,7 @@ function Analytics() {
                       </div>
                     </div>
 
-                    {/* AI Suggestion Card - Initially hidden */}
+                    {/* AI Suggestion Card */}
                     <div
                       id={`ai-suggestion-${subscription.id}`}
                       className="hidden"
@@ -405,14 +437,13 @@ function Analytics() {
               )}
             </div>
 
-            {/* Optional: Add a batch AI suggestion button at the bottom */}
+            {/* Batch AI suggestion button */}
             <div className="mt-4 pt-4 border-t">
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full text-xs"
                 onClick={() => {
-                  // Optional: Open modal with all subscriptions for batch AI analysis
                   alert("Batch AI Savings Report coming soon!");
                 }}
               >
@@ -422,50 +453,6 @@ function Analytics() {
             </div>
           </CardContent>
         </Card>
-        {/* <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">
-              Upcoming Renewals (30 Days)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-64 sm:max-h-80 overflow-y-auto">
-              {upcomingRenewals.length > 0 ? (
-                upcomingRenewals.map((subscription) => (
-                  <div
-                    key={subscription.id}
-                    className="flex justify-between items-center p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {subscription.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(
-                          subscription.billingDate?.nextBillingDate
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-2">
-                      <p className="font-semibold text-sm">
-                        ${subscription.price?.amount?.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize truncate max-w-20">
-                        {subscription.category}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    No upcoming renewals in the next 30 days
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card> */}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     const backendUrl =
       process.env.NODE_ENV === "development"
         ? "http://localhost:5000"
-        : "https://renewal-guard.onrender.com"; // ← Your Render URL
+        : "https://renewal-guard.onrender.com";
 
     return [
       {
@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  images: {
+    domains: ["localhost", "renewal-guard.onrender.com"],
+  },
+
+  reactStrictMode: true,
 };
 
 export default nextConfig;

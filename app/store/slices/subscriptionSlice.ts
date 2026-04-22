@@ -38,7 +38,7 @@ export interface SubscriptionsState {
   subscriptions: Subscription[];
   loading: boolean;
   error: string | null;
-  currentSubscription: Subscription | null; // For editing/viewing a single subscription
+  currentSubscription: Subscription | null;
 }
 
 export const initialState: SubscriptionsState = {
@@ -48,48 +48,86 @@ export const initialState: SubscriptionsState = {
   currentSubscription: null,
 };
 
+// ✅ Type-safe normalize function
+const normalizeSubscription = (
+  item: Partial<Subscription> & { _id?: string; id?: string },
+): Subscription => {
+  return {
+    name: item.name || "",
+    serviceName: item.serviceName || "",
+    description: item.description,
+    category: item.category || "",
+    price: item.price || {
+      amount: 0,
+      currency: "USD",
+      billingCycle: "monthly",
+    },
+    billingDate: item.billingDate || {
+      startDate: new Date().toISOString(),
+      nextBillingDate: new Date().toISOString(),
+    },
+    status: item.status || "active",
+    paymentMethod: item.paymentMethod || "",
+    autoRenew: item.autoRenew ?? true,
+    sendReminders: item.sendReminders ?? true,
+    notes: item.notes,
+    phone: item.phone,
+    tags: item.tags,
+    importance: item.importance || "medium",
+    id: item._id || item.id || "",
+    _id: item._id,
+  };
+};
+
+// ✅ Type-safe find index function
+const findSubscriptionIndex = (
+  subscriptions: Subscription[],
+  id: string,
+): number => {
+  return subscriptions.findIndex((sub) => sub.id === id || sub._id === id);
+};
+
 const subscriptionsSlice = createSlice({
   name: "subscriptions",
   initialState,
   reducers: {
-    // Set loading state
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
 
-    // Set error message
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
 
     // Set all subscriptions (for initial load)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setSubscriptions: (state, action: PayloadAction<any[]>) => {
-      state.subscriptions = action.payload.map((item) => {
-        // Each item should be a subscription object with _id
-        return {
-          ...item,
-          id: item._id || item.id, // Convert _id to id for frontend
-        };
-      });
+    setSubscriptions: (state, action: PayloadAction<Subscription[]>) => {
+      state.subscriptions = action.payload.map(normalizeSubscription);
       state.loading = false;
       state.error = null;
     },
 
     // Add new subscription
     createSubscription: (state, action: PayloadAction<Subscription>) => {
-      state.subscriptions.push(action.payload);
+      const normalizedSub = normalizeSubscription(action.payload);
+      const exists = state.subscriptions.some(
+        (sub) => sub.id === normalizedSub.id || sub._id === normalizedSub._id,
+      );
+      if (!exists) {
+        state.subscriptions.push(normalizedSub);
+      }
       state.loading = false;
       state.error = null;
     },
 
     // Update existing subscription
     updateSubscription: (state, action: PayloadAction<Subscription>) => {
-      const index = state.subscriptions.findIndex(
-        (sub) => sub._id === action.payload._id || sub.id === action.payload.id
+      const normalizedSub = normalizeSubscription(action.payload);
+      const index = findSubscriptionIndex(
+        state.subscriptions,
+        normalizedSub.id,
       );
       if (index !== -1) {
-        state.subscriptions[index] = action.payload;
+        state.subscriptions[index] = normalizedSub;
       }
       state.loading = false;
       state.error = null;
@@ -98,10 +136,11 @@ const subscriptionsSlice = createSlice({
     // Update subscription by ID with partial data
     updateSubscriptionById: (
       state,
-      action: PayloadAction<{ id: string; updates: Partial<Subscription> }>
+      action: PayloadAction<{ id: string; updates: Partial<Subscription> }>,
     ) => {
-      const index = state.subscriptions.findIndex(
-        (sub) => sub.id === action.payload.id
+      const index = findSubscriptionIndex(
+        state.subscriptions,
+        action.payload.id,
       );
       if (index !== -1) {
         state.subscriptions[index] = {
@@ -114,24 +153,24 @@ const subscriptionsSlice = createSlice({
     // Delete subscription
     deleteSubscription: (state, action: PayloadAction<string>) => {
       state.subscriptions = state.subscriptions.filter(
-        (sub) => sub.id !== action.payload
+        (sub) => sub.id !== action.payload && sub._id !== action.payload,
       );
       state.loading = false;
       state.error = null;
     },
 
-    // Set current subscription for editing/viewing
     setCurrentSubscription: (
       state,
-      action: PayloadAction<Subscription | null>
+      action: PayloadAction<Subscription | null>,
     ) => {
-      state.currentSubscription = action.payload;
+      state.currentSubscription = action.payload
+        ? normalizeSubscription(action.payload)
+        : null;
     },
 
-    // Update current subscription field
     updateCurrentSubscription: (
       state,
-      action: PayloadAction<Partial<Subscription>>
+      action: PayloadAction<Partial<Subscription>>,
     ) => {
       if (state.currentSubscription) {
         state.currentSubscription = {
@@ -153,21 +192,22 @@ const subscriptionsSlice = createSlice({
           | "inactive"
           | "pending"
           | "deleted";
-      }>
+      }>,
     ) => {
-      const index = state.subscriptions.findIndex(
-        (sub) => sub.id === action.payload.id
+      const index = findSubscriptionIndex(
+        state.subscriptions,
+        action.payload.id,
       );
       if (index !== -1) {
         state.subscriptions[index].status = action.payload.status;
       }
+      state.loading = false;
+      state.error = null;
     },
 
     // Toggle auto-renew for a subscription
     toggleAutoRenew: (state, action: PayloadAction<string>) => {
-      const index = state.subscriptions.findIndex(
-        (sub) => sub.id === action.payload
-      );
+      const index = findSubscriptionIndex(state.subscriptions, action.payload);
       if (index !== -1) {
         state.subscriptions[index].autoRenew =
           !state.subscriptions[index].autoRenew;
@@ -176,9 +216,7 @@ const subscriptionsSlice = createSlice({
 
     // Toggle reminders for a subscription
     toggleReminders: (state, action: PayloadAction<string>) => {
-      const index = state.subscriptions.findIndex(
-        (sub) => sub.id === action.payload
-      );
+      const index = findSubscriptionIndex(state.subscriptions, action.payload);
       if (index !== -1) {
         state.subscriptions[index].sendReminders =
           !state.subscriptions[index].sendReminders;

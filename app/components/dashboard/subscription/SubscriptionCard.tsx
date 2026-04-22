@@ -1,4 +1,3 @@
-// components/dashboard/SubscriptionCard.tsx
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,24 +24,20 @@ const SubscriptionCard = ({
   );
 
   const formattedPrice = subscription.price.amount
-    ? `${subscription.price?.amount?.toFixed(2)} `
+    ? `${subscription.price.amount.toFixed(2)} `
     : "0.00";
 
-  const getBadgeVariant = () => {
+  const getBadgeVariant = (): "default" | "secondary" | "destructive" => {
     switch (subscription.status) {
       case "active":
         return "default";
       case "expired":
         return "secondary";
       case "cancelled":
-        return "destructive";
       case "deleted":
-        return "destructive";
       case "inactive":
-        return "destructive";
       case "pending":
         return "destructive";
-
       default:
         return "secondary";
     }
@@ -66,7 +61,7 @@ const SubscriptionCard = ({
               variant="outline"
               size="sm"
               onClick={() => onDelete(subscription.id)}
-              className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-800"
             >
               Delete
             </Button>

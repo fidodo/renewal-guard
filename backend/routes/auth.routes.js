@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authLimiter } from "../middlewares/rateLimit.middleware.js";
 import {
   signUp,
   signIn,
@@ -10,19 +11,23 @@ import {
 } from "../controller/auth.controller.js";
 import authorize from "../middlewares/auth.middleware.js";
 
-const authRouther = Router();
+const authRouter = Router();
 
-authRouther.post("/sign-up", signUp);
+authRouter.get("/test", (req, res) => {
+  res.json({ message: "Auth router is working!", timestamp: new Date() });
+});
 
-authRouther.post("/sign-in", signIn);
+authRouter.post("/sign-up", authLimiter, signUp);
 
-authRouther.post("/sign-out", signOut);
+authRouter.post("/sign-in", authLimiter, signIn);
 
-authRouther.post("/refresh-token", refreshAuthToken);
+authRouter.post("/sign-out", signOut);
 
-authRouther.get("/me", authorize, userMe);
+authRouter.post("/refresh-token", refreshAuthToken);
+
+authRouter.get("/me", authorize, userMe);
 
 // New google Oauth routes
-authRouther.get("/google", googleAuth);
-authRouther.get("/google/callback", googleAuthCallback);
-export default authRouther;
+authRouter.get("/google", googleAuth);
+authRouter.get("/google/callback", googleAuthCallback);
+export default authRouter;
