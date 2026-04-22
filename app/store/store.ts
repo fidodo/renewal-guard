@@ -1,22 +1,56 @@
 // store/store.ts
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import storage from "redux-persist/lib/storage"; // uses localStorage
 import themeReducer from "./slices/themeSlice";
 import userReducer from "./slices/userSlice";
 import subscriptionReducer from "./slices/subscriptionSlice";
 import settingReducer from "./slices/settingSlice";
-// ... import your other reducers
 
-export const store = configureStore({
-  reducer: {
-    theme: themeReducer,
-    user: userReducer,
-    subscription: subscriptionReducer,
-    setting: settingReducer,
+// Configure persistence for subscription data
+const subscriptionPersistConfig = {
+  key: "subscription",
+  storage,
+  whitelist: ["subscriptions"], // Persist only the subscriptions array
+};
 
-    // ... your other reducers
-  },
+// Configure persistence for user data (optional)
+const userPersistConfig = {
+  key: "user",
+  storage,
+  whitelist: ["user", "isAuthenticated"], // Persist user data
+};
+
+// Configure persistence for theme
+const themePersistConfig = {
+  key: "theme",
+  storage,
+  whitelist: ["current"], // Persist theme preference
+};
+
+const rootReducer = combineReducers({
+  theme: persistReducer(themePersistConfig, themeReducer),
+  user: persistReducer(userPersistConfig, userReducer),
+  subscription: persistReducer(subscriptionPersistConfig, subscriptionReducer),
+  setting: settingReducer, // Don't persist settings if not needed
 });
 
-// Infer the `RootState` and `AppDispatch` types from the store itself
+export const store = configureStore({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore redux-persist actions
+        ignoredActions: [
+          "persist/PERSIST",
+          "persist/REHYDRATE",
+          "persist/REGISTER",
+        ],
+      },
+    }),
+});
+
+export const persistor = persistStore(store);
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

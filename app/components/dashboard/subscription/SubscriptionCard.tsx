@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Subscription } from "./SubscriptionForm";
 import { getDaysUntilRenewal } from "@/app/helper/getDaysUntilRenewal";
+import { useAppSelector } from "@/app/hooks/redux";
+import { getStatusColors } from "@/app/store/slices/themeSlice";
 
 interface SubscriptionCardProps {
   subscription: Subscription;
@@ -19,6 +21,24 @@ const SubscriptionCard = ({
   isCancelling = false,
   onEdit,
 }: SubscriptionCardProps) => {
+  const theme = useAppSelector((state) => state.theme.current);
+  const colors = getStatusColors(theme);
+
+  const getStatusColor = () => {
+    switch (subscription.status) {
+      case "active":
+        return colors.active;
+      case "expired":
+        return colors.expired;
+      case "cancelled":
+        return colors.cancelled;
+      default:
+        return colors.default;
+    }
+  };
+
+  const statusColor = getStatusColor();
+
   const daysUntilRenewal = getDaysUntilRenewal(
     subscription.billingDate?.nextBillingDate,
   );
@@ -44,7 +64,9 @@ const SubscriptionCard = ({
   };
 
   return (
-    <Card>
+    <Card
+      className={`border-2 ${statusColor.border} ${statusColor.bg} transition-all duration-200 hover:shadow-md`}
+    >
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl">
           {subscription.name
