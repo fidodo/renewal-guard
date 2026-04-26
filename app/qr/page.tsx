@@ -25,7 +25,7 @@ export default function QRPage() {
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
       <div className="w-full max-w-md p-6 bg-card rounded-lg shadow-lg">
         <h1 className="text-2xl font-bold text-center mb-6">
-          Generate Your QR Code
+          Generate QR Code
         </h1>
 
         <div ref={qrRef} className="flex justify-center mb-6">

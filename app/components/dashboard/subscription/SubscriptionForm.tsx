@@ -80,7 +80,7 @@ export interface SubscriptionFormProps {
   subscription?: Subscription;
   onCancel: () => void;
   mode?: "create" | "edit";
-  onSuccess?: () => void;
+  onSuccess?: (newSubscription?: Subscription) => void;
 }
 
 const SubscriptionForm = ({
@@ -108,14 +108,42 @@ const SubscriptionForm = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateError, setDateError] = useState<string>("");
   const dispatch = useAppDispatch();
 
   const getToken = () => {
     return localStorage.getItem("token") || localStorage.getItem("authToken");
   };
 
+  const isNextBillingDateValid = (
+    startDate: string,
+    nextBillingDate: string,
+  ): boolean => {
+    if (!startDate || !nextBillingDate) return true;
+    const start = new Date(startDate);
+    const next = new Date(nextBillingDate);
+    return next >= start;
+  };
+
+  const handleNextBillingDateChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      nextBillingDate: value,
+    }));
+
+    // Clear error when date becomes valid
+    if (dateError && isNextBillingDateValid(formData.startDate, value)) {
+      setDateError("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isNextBillingDateValid(formData.startDate, formData.nextBillingDate)) {
+      setDateError("Next billing date cannot be before start date");
+      return;
+    }
+    setDateError("");
     setIsSubmitting(true);
 
     const subscriptionData = {
@@ -204,7 +232,7 @@ const SubscriptionForm = ({
         dispatch(createSubscription(savedSubscription));
       }
 
-      onSuccess?.();
+      onSuccess?.(savedSubscription);
       onCancel();
     } catch (error) {
       console.error("Error saving subscription:", error);
@@ -388,12 +416,22 @@ const SubscriptionForm = ({
                 id="startDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const newStartDate = e.target.value;
                   setFormData((prev) => ({
                     ...prev,
-                    startDate: e.target.value,
-                  }))
-                }
+                    startDate: newStartDate,
+                  }));
+                  if (
+                    dateError &&
+                    isNextBillingDateValid(
+                      newStartDate,
+                      formData.nextBillingDate,
+                    )
+                  ) {
+                    setDateError("");
+                  }
+                }}
                 required
                 disabled={isSubmitting}
               />
@@ -404,15 +442,15 @@ const SubscriptionForm = ({
                 id="nextBillingDate"
                 type="date"
                 value={formData.nextBillingDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    nextBillingDate: e.target.value,
-                  }))
-                }
+                min={formData.startDate || undefined}
+                onChange={(e) => handleNextBillingDateChange(e.target.value)}
                 required
                 disabled={isSubmitting}
+                className={dateError ? "border-red-500" : ""}
               />
+              {dateError && (
+                <p className="text-xs text-red-500 mt-1">{dateError}</p>
+              )}
             </div>
           </div>
 

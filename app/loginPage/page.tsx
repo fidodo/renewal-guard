@@ -22,7 +22,7 @@ const promptReauthentication = (): void => {
   localStorage.removeItem("refreshToken");
 
   const shouldRelogin = window.confirm(
-    "Your session has expired. Please log in again to continue."
+    "Your session has expired. Please log in again to continue.",
   );
 
   if (shouldRelogin) {
@@ -78,7 +78,6 @@ const refreshAuthToken = async (): Promise<boolean> => {
 
       const data: RefreshTokenResponse = await response.json();
       console.log("Refresh data:", data);
-      // Server can indicate that re-authentication is required
       if (data.requiresReauth) {
         promptReauthentication();
         return false;
@@ -86,7 +85,6 @@ const refreshAuthToken = async (): Promise<boolean> => {
 
       if (data.success && data.token && data.refreshToken) {
         setTokens(data.token, data.refreshToken);
-
         return true;
       }
 
@@ -105,7 +103,7 @@ const refreshAuthToken = async (): Promise<boolean> => {
 // Enhanced fetch with token refresh and retry logic
 const fetchWithAuth = async (
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> => {
   let token = localStorage.getItem("token");
   let retryCount = 0;
@@ -120,7 +118,6 @@ const fetchWithAuth = async (
       },
     };
 
-    // Add authorization header if token exists
     if (token) {
       requestOptions.headers = {
         ...requestOptions.headers,
@@ -130,18 +127,15 @@ const fetchWithAuth = async (
 
     const response = await fetch(url, requestOptions);
 
-    // If token is expired, try to refresh and retry
     if (response.status === 401 && retryCount < maxRetries) {
       console.log("Token expired, attempting refresh...");
       const refreshSuccess = await refreshAuthToken();
 
       if (refreshSuccess) {
-        // Get new token and retry request
         retryCount++;
         token = localStorage.getItem("token");
-        return makeRequest(); // Recursive retry
+        return makeRequest();
       } else {
-        // Refresh failed, clear tokens and return original response
         clearTokens();
       }
     }
@@ -181,12 +175,11 @@ const initialState: LoginState = {
 
 async function loginAction(
   prevState: LoginState,
-  formData: FormData
+  formData: FormData,
 ): Promise<LoginState> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  // Validation (keep your existing code)
   if (!email || !password) {
     return {
       ...prevState,
@@ -209,11 +202,9 @@ async function loginAction(
     const data = await response.json();
     console.log("Login response data:", data);
 
-    // Handle specific error cases
     if (!response.ok || !data.success) {
       let errorMessage = data.error || data.message || "Login failed";
 
-      // User-friendly error messages
       if (data.error === "User not found") {
         errorMessage =
           "No account found with this email. Please sign up first.";
@@ -229,7 +220,6 @@ async function loginAction(
       };
     }
 
-    // Success case
     if (data.data?.token && data.data?.user) {
       try {
         localStorage.setItem("refreshToken", data.data.refreshToken || "");
@@ -275,21 +265,24 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const [state, formAction, isPending] = useActionState(
     loginAction,
-    initialState
+    initialState,
   );
   const [successMessage, setSuccessMessage] = useState<string>("");
 
-  // Use the auth hook
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Redirect if already authenticated
+  // ✅ Google Sign In handler
+  const handleGoogleSignIn = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    window.location.href = `${apiUrl}/api/v1/auth/google`;
+  };
+
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push("/dashboard");
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Handle successful login
   useEffect(() => {
     if (state.success) {
       try {
@@ -298,7 +291,6 @@ export default function LoginPage() {
           dispatch(setUser(JSON.parse(userData)));
           setSuccessMessage("Login successful!");
 
-          // Redirect after success message is shown
           const redirectTimer = setTimeout(() => {
             router.push("/dashboard");
           }, 1000);
@@ -316,7 +308,6 @@ export default function LoginPage() {
     }
   }, [state.success, dispatch, router]);
 
-  // Clear error when user starts typing
   useEffect(() => {
     if (state.error) {
       const inputs = document.querySelectorAll("input");
@@ -440,9 +431,9 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          <div className="flex items-center justify-center pt-1 ">
-            <p className="text-amber-600">
-              * Password must be Minimum 6 characters long
+          <div className="flex items-center justify-center pt-1">
+            <p className="text-amber-600 text-xs sm:text-sm">
+              * Password must be at least 6 characters long
             </p>
           </div>
 
@@ -462,6 +453,44 @@ export default function LoginPage() {
               )}
             </button>
           </div>
+
+          {/* ✅ Google Sign In Button */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleGoogleSignIn}
+            type="button"
+            className="w-full flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Continue with Google
+          </button>
 
           <div className="text-center pt-4">
             <Link

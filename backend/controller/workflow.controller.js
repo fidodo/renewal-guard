@@ -1,3 +1,4 @@
+// workflows/subscription/workflow.js
 import { createRequire } from "module";
 import dayjs from "dayjs";
 import Subscription from "../models/subscription.model.js";
@@ -7,72 +8,89 @@ import { sendReminderSMS } from "../utils/send-sms.js";
 const require = createRequire(import.meta.url);
 const { serve } = require("@upstash/workflow/express");
 
-const REMINDERS = [7, 5, 2, 1]; // days before renewal
+const REMINDERS = [
+  { days: 7, label: "7 days before reminder" },
+  { days: 5, label: "5 days before reminder" },
+  { days: 2, label: "2 days before reminder" },
+  { days: 1, label: "1 day before reminder" },
+];
 
 export const sendReminders = serve(async (context) => {
   const { subscriptionId } = context.requestPayload;
+  console.log(`📋 Starting workflow for subscription: ${subscriptionId}`);
 
-  // Logic to send reminders based on the subscriptionId
   const subscription = await fetchSubscription(context, subscriptionId);
-  console.log("Subscription found workflow:", subscription);
 
-  if (!subscription || subscription.status !== "active") return;
-
-  // Simulate sending a reminder (e.g., via email)
-  const renewalDate = dayjs(subscription.billingDate.nextBillingDate);
-  console.log("Renewal date:", renewalDate);
-
-  if (renewalDate.isBefore(dayjs())) {
+  if (!subscription || subscription.status !== "active") {
+    console.log(`Subscription ${subscriptionId} is not active, skipping`);
     return;
   }
 
-  for (const daysBefore of REMINDERS) {
-    const reminderDate = renewalDate.subtract(daysBefore, "day");
+  if (!subscription.user || !subscription.user.email) {
+    console.error(`No user email found for subscription ${subscriptionId}`);
+    return;
+  }
 
-    if (reminderDate.isAfter(dayjs())) {
-      await sleepUntilReminder(
-        context,
-        `${daysBefore} day${daysBefore === 1 ? "" : "s"} before reminder`,
-        reminderDate
+  const renewalDate = dayjs(subscription.billingDate.nextBillingDate);
+  const today = dayjs();
+
+  if (renewalDate.isBefore(today)) {
+    console.log("Renewal date is in the past, skipping");
+    return;
+  }
+
+  console.log(`Renewal date: ${renewalDate.format("YYYY-MM-DD")}`);
+  console.log(`User email: ${subscription.user.email}`);
+
+  for (const reminder of REMINDERS) {
+    const reminderDate = renewalDate.subtract(reminder.days, "day");
+
+    if (reminderDate.isAfter(today)) {
+      console.log(
+        `⏰ Scheduling ${reminder.label} for ${reminderDate.format("YYYY-MM-DD")}`,
       );
+      await context.sleepUntil(reminder.label, reminderDate.toDate());
     }
 
-    if (dayjs().isSame(reminderDate, "day")) {
-      await triggerReminder(
-        context,
-        `${daysBefore} day${daysBefore === 1 ? "" : "s"} before reminder`,
-        subscription
-      );
+    if (dayjs().isSame(reminderDate, "day") || dayjs().isAfter(reminderDate)) {
+      await triggerReminder(context, reminder.label, subscription);
     }
   }
 });
 
 const fetchSubscription = async (context, subscriptionId) => {
   return await context.run("fetchSubscription", async () => {
-    return Subscription.findById(subscriptionId).populate("user", "name email");
-  });
-};
+    const subscription = await Subscription.findById(subscriptionId).populate(
+      "user",
+      "name email phone",
+    );
 
-const sleepUntilReminder = async (context, label, date) => {
-  await context.sleepUntil(label, date.toDate());
-  const now = dayjs();
-  const delay = date.diff(now, "millisecond");
-  if (delay > 0) {
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
+    if (!subscription) {
+      console.log(`Subscription ${subscriptionId} not found`);
+      return null;
+    }
+
+    console.log(
+      `Found subscription: ${subscription.name} for user: ${subscription.user?.name || "Unknown"}`,
+    );
+    return subscription;
+  });
 };
 
 const triggerReminder = async (context, label, subscription) => {
   return await context.run(label, async () => {
+    console.log(`📧 Sending ${label} email to: ${subscription.user.email}`);
+
     await sendReminderEmail({
       to: subscription.user.email,
       type: label,
       subscription,
     });
 
-    if (subscription.phone) {
+    if (subscription.user.phone) {
+      console.log(`📱 Sending ${label} SMS to: ${subscription.user.phone}`);
       await sendReminderSMS({
-        to: subscription.phone,
+        to: subscription.user.phone,
         type: label,
         subscription,
       });

@@ -8,6 +8,8 @@ import {
   setSubscriptions,
   updateSubscriptionStatus,
   deleteSubscription,
+  createSubscription,
+  updateSubscription,
 } from "../../store/slices/subscriptionSlice";
 import { ConditionalPaginatedSubscriptions } from "./ConditionalPaginatedSubscriptions";
 import { Subscription } from "./subscription/SubscriptionForm";
@@ -27,7 +29,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingSubscription, setEditingSubscription] =
     useState<Subscription | null>(null);
-  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+
   const [sortBy, setSortBy] = useState<
     "autoRenew" | "nextBillingDate" | "name"
   >("nextBillingDate");
@@ -145,117 +147,28 @@ const Dashboard = () => {
 
   const handleEditClick = (subscription: Subscription) => {
     setEditingSubscription(subscription);
-    setFormMode("edit");
+
     setShowForm(true);
   };
 
-  // ✅ Updated: Show options instead of directly opening form
   const handleAddNewClick = () => {
     setShowAddOptions(true);
   };
 
-  // ✅ Handle image upload selection
   const handleSelectImageUpload = () => {
     setShowAddOptions(false);
     setShowImageUpload(true);
   };
 
-  // ✅ Handle manual form selection
   const handleSelectManualForm = () => {
     setShowAddOptions(false);
     setShowManualForm(true);
   };
 
-  // ✅ Handle image upload success
-  const handleImageUploadSuccess = () => {
-    setShowImageUpload(false);
-    fetchSubscriptions(); // Refresh the list
-  };
-
-  // ✅ Handle manual form success
-  const handleManualFormSuccess = () => {
-    setShowManualForm(false);
-    fetchSubscriptions(); // Refresh the list
-  };
-
-  // ✅ Handle edit form success
-  const handleFormSuccess = useCallback(() => {
-    setShowForm(false);
-    setEditingSubscription(null);
-    fetchSubscriptions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingSubscription(null);
   };
-
-  // Fetch subscriptions from backend
-  // const fetchSubscriptions = useCallback(async () => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     if (!token) {
-  //       setError("Please log in to view subscriptions");
-  //       dispatch(setSubscriptions([]));
-  //       setIsInitialLoading(false);
-  //       return;
-  //     }
-
-  //     const response = await fetch(`/api/v1/subscriptions/user`, {
-  //       method: "GET",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     if (response.status === 401) {
-  //       const refreshSuccess = await refreshAuthToken();
-  //       if (refreshSuccess) {
-  //         const newToken = localStorage.getItem("token");
-  //         if (newToken) {
-  //           const retryResponse = await fetch(`/api/v1/subscriptions/user`, {
-  //             method: "GET",
-  //             headers: {
-  //               "Content-Type": "application/json",
-  //               Authorization: `Bearer ${newToken}`,
-  //             },
-  //           });
-  //           if (retryResponse.ok) {
-  //             const result = await retryResponse.json();
-  //             if (result.success && result.data) {
-  //               dispatch(
-  //                 setSubscriptions(
-  //                   Array.isArray(result.data) ? result.data : [result.data],
-  //                 ),
-  //               );
-  //             }
-  //           }
-  //         }
-  //       }
-  //       setIsInitialLoading(false);
-  //       return;
-  //     }
-
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to fetch subscriptions: ${response.status}`);
-  //     }
-
-  //     const result = await response.json();
-  //     if (result.success && result.data) {
-  //       const subscriptionsData = Array.isArray(result.data)
-  //         ? result.data
-  //         : [result.data];
-  //       dispatch(setSubscriptions(subscriptionsData));
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching subscriptions:", error);
-  //     setError("Failed to load subscriptions");
-  //   } finally {
-  //     setIsInitialLoading(false);
-  //   }
-  // }, [dispatch]);
 
   const fetchSubscriptions = useCallback(async () => {
     try {
@@ -294,6 +207,43 @@ const Dashboard = () => {
     fetchSubscriptions();
   }, [fetchSubscriptions]);
 
+  // ✅ SINGLE HANDLER FOR CREATE (used by both manual form and image upload)
+  const handleCreateSuccess = useCallback(
+    (newSubscription?: Subscription) => {
+      setShowManualForm(false);
+      setShowImageUpload(false);
+
+      if (newSubscription && newSubscription._id) {
+        const processedSub = processSubscriptionStatus(newSubscription);
+        dispatch(createSubscription(processedSub));
+        console.log("✅ Added subscription instantly:", newSubscription.name);
+      } else {
+        fetchSubscriptions();
+      }
+    },
+    [dispatch, processSubscriptionStatus, fetchSubscriptions],
+  );
+
+  // ✅ SINGLE HANDLER FOR EDIT
+  const handleEditSuccess = useCallback(
+    (updatedSubscription?: Subscription) => {
+      setShowForm(false);
+      setEditingSubscription(null);
+
+      if (updatedSubscription && updatedSubscription._id) {
+        const processedSub = processSubscriptionStatus(updatedSubscription);
+        dispatch(updateSubscription(processedSub));
+        console.log(
+          "✅ Updated subscription instantly:",
+          updatedSubscription.name,
+        );
+      } else {
+        fetchSubscriptions();
+      }
+    },
+    [dispatch, processSubscriptionStatus, fetchSubscriptions],
+  );
+
   const handleCancelSubscription = async (id: string) => {
     const subscriptionToCancel = subscriptions.find(
       (sub) => sub.id === id || sub._id === id,
@@ -328,7 +278,6 @@ const Dashboard = () => {
         alert("Failed to cancel subscription");
       } else {
         alert("Subscription cancelled successfully!");
-        fetchSubscriptions(); // Refresh to update UI
       }
     } catch (error) {
       console.error("Error cancelling subscription:", error);
@@ -376,7 +325,6 @@ const Dashboard = () => {
         alert("Failed to delete subscription");
       } else {
         alert("Subscription deleted successfully!");
-        fetchSubscriptions(); // Refresh to update UI
       }
     } catch (error) {
       console.error("Error deleting subscription:", error);
@@ -577,10 +525,10 @@ const Dashboard = () => {
       {/* Edit Form Modal */}
       {showForm && (
         <SubscriptionForm
-          mode={formMode}
+          mode="edit"
           subscription={editingSubscription || undefined}
           onCancel={handleFormCancel}
-          onSuccess={handleFormSuccess}
+          onSuccess={handleEditSuccess}
         />
       )}
 
@@ -596,7 +544,7 @@ const Dashboard = () => {
       <ImageUploadSubscription
         isOpen={showImageUpload}
         onClose={() => setShowImageUpload(false)}
-        onSuccess={handleImageUploadSuccess}
+        onSuccess={handleCreateSuccess}
       />
 
       {/* Manual Form Modal */}
@@ -604,7 +552,7 @@ const Dashboard = () => {
         <SubscriptionForm
           mode="create"
           onCancel={() => setShowManualForm(false)}
-          onSuccess={handleManualFormSuccess}
+          onSuccess={handleCreateSuccess}
         />
       )}
     </div>

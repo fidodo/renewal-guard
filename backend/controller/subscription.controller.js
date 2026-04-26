@@ -3,34 +3,64 @@ import workflowClient from "../config/upstash.js";
 import Subscription from "../models/subscription.model.js";
 import { SERVER_URL } from "../config/env.js";
 import mongoose from "mongoose";
+import { sendReminderEmail } from "../utils/send-email.js";
 
 // export const createSubscription = async (req, res, next) => {
+//   let subscription;
+
 //   try {
-//     const subscription = await Subscription.create({
+//     // 1. Create subscription
+//     subscription = await Subscription.create({
 //       ...req.body,
-//       user: req.user._id,
+//       user: req.user._id || req.user.id, // Handle both cases
 //     });
-//     console.log("subscription", subscription);
+//     console.log("✅ Subscription created:", subscription._id);
 
-//     const { workflowRunId } = await workflowClient.trigger({
-//       url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
-//       body: { subscriptionId: subscription.id },
-//       headers: { "Content-Type": "application/json" },
-//       retries: 0,
-//     });
-
+//     // 2. Send immediate response
 //     res.status(201).json({
 //       success: true,
 //       message: "Subscription created successfully",
-//       data: {
-//         subscription,
-//         workflowRunId,
-//       },
+//       data: { subscription },
+//     });
+
+//     // 3. Trigger workflow ASYNCHRONOUSLY (don't await)
+//     // This won't block the response or cause 500 errors
+//     triggerWorkflowAsync(subscription.id).catch((err) => {
+//       console.warn("⚠️ Background workflow trigger failed:", err.message);
+//       // Can log to monitoring service
 //     });
 //   } catch (error) {
+//     console.error("❌ Error creating subscription:", error);
 //     next(error);
 //   }
 // };
+
+// // Separate async function for workflow
+// async function triggerWorkflowAsync(subscriptionId) {
+//   // Don't trigger in development or if URL missing
+//   if (process.env.NODE_ENV !== "production" || !process.env.SERVER_URL) {
+//     console.log("⏸️ Skipping workflow trigger in development");
+//     return;
+//   }
+
+//   try {
+//     const { workflowRunId } = await workflowClient.trigger({
+//       url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
+//       body: { subscriptionId },
+//       headers: { "Content-Type": "application/json" },
+//       retries: 1, // Single retry
+//     });
+
+//     console.log("✅ Background workflow triggered:", workflowRunId);
+//     return workflowRunId;
+//   } catch (error) {
+//     // Log but don't throw - this is background processing
+//     console.error("❌ Background workflow failed:", error.message);
+//     // Could queue for retry later
+//     await queueWorkflowRetry(subscriptionId);
+//     throw error; // Throw to catch in caller if needed
+//   }
+// }
 
 export const createSubscription = async (req, res, next) => {
   let subscription;
@@ -39,66 +69,91 @@ export const createSubscription = async (req, res, next) => {
     // 1. Create subscription
     subscription = await Subscription.create({
       ...req.body,
-      user: req.user._id,
+      user: req.user._id || req.user.id,
     });
     console.log("✅ Subscription created:", subscription._id);
+
+    // Populate user data for email
+    const populatedSubscription = await Subscription.findById(
+      subscription._id,
+    ).populate("user", "name email phone");
 
     // 2. Send immediate response
     res.status(201).json({
       success: true,
       message: "Subscription created successfully",
-      data: { subscription },
+      data: { subscription: populatedSubscription },
     });
 
-    // 3. Trigger workflow ASYNCHRONOUSLY (don't await)
-    // This won't block the response or cause 500 errors
-    triggerWorkflowAsync(subscription.id).catch((err) => {
-      console.warn("⚠️ Background workflow trigger failed:", err.message);
-      // Can log to monitoring service
-    });
+    // 3. Send email immediately in development OR trigger workflow in production
+    if (process.env.NODE_ENV !== "production") {
+      // Development: Send email directly
+      console.log("📧 Development mode - sending reminder email directly...");
+      await sendReminderEmail({
+        to: req.user.email,
+        type: "7 days before reminder",
+        subscription: populatedSubscription,
+      }).catch((err) => console.error("Email failed:", err.message));
+    } else {
+      // Production: Use workflow
+      triggerWorkflowAsync(subscription._id).catch((err) => {
+        console.warn("⚠️ Background workflow trigger failed:", err.message);
+      });
+    }
   } catch (error) {
     console.error("❌ Error creating subscription:", error);
     next(error);
   }
 };
 
-// Separate async function for workflow
+// ✅ FIXED: Allow workflow in development for testing
 async function triggerWorkflowAsync(subscriptionId) {
-  // Don't trigger in development or if URL missing
-  if (process.env.NODE_ENV !== "production" || !process.env.SERVER_URL) {
-    console.log("⏸️ Skipping workflow trigger in development");
+  // Allow in development if explicitly enabled OR in production
+  const shouldTrigger =
+    process.env.NODE_ENV === "production" ||
+    process.env.ENABLE_WORKFLOW === "true";
+
+  if (!shouldTrigger) {
+    console.log(
+      "⏸️ Skipping workflow trigger. Set ENABLE_WORKFLOW=true to enable in development",
+    );
     return;
   }
 
+  // Get the correct URL for the environment
+  const workflowUrl =
+    process.env.NODE_ENV === "production"
+      ? `${SERVER_URL}/api/v1/workflows/subscription/reminder`
+      : `http://localhost:5000/api/v1/workflows/subscription/reminder`;
+
+  console.log(`🚀 Triggering workflow at: ${workflowUrl}`);
+
   try {
     const { workflowRunId } = await workflowClient.trigger({
-      url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
+      url: workflowUrl,
       body: { subscriptionId },
       headers: { "Content-Type": "application/json" },
-      retries: 1, // Single retry
+      retries: 1,
     });
 
     console.log("✅ Background workflow triggered:", workflowRunId);
     return workflowRunId;
   } catch (error) {
-    // Log but don't throw - this is background processing
     console.error("❌ Background workflow failed:", error.message);
-    // Could queue for retry later
-    await queueWorkflowRetry(subscriptionId);
-    throw error; // Throw to catch in caller if needed
+    return null;
   }
 }
 
 // Optional: Queue failed workflows for retry
-async function queueWorkflowRetry(subscriptionId) {
-  // Store in database or message queue for retry
-  await FailedWorkflow.create({
-    subscriptionId,
-    type: "reminder",
-    error: "Trigger failed",
-    retryAt: new Date(Date.now() + 5 * 60 * 1000), // Retry in 5 minutes
-  });
-}
+// async function queueWorkflowRetry(subscriptionId) {
+//   // Store in database or message queue for retry
+//   await FailedWorkflow.create({
+//     subscriptionId,
+//     type: "reminder",
+//     error: "Trigger failed",
+//     retryAt: new Date(Date.now() + 5 * 60 * 1000), // Retry in 5 minutes
+//   });
+// }
 
 export const getAllSubscriptions = async (req, res, next) => {
   try {

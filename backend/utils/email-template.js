@@ -23,7 +23,7 @@ export const generateEmailTemplate = ({
         <p>If you wish to make any changes to your subscription or payment method, please visit your <a href="${accountSettingsLink}">Account Settings</a>.</p>
         <p>For any questions or concerns, please don't hesitate to <a href="${supportLink}">contact our support team</a>.</p>
         <p>Thank you for your continued support!</p>
-        <p>Best regards,<br>${subscriptionName} Team</p>
+        <p>Best regards,<br> Renewal Guard Team</p>
     </div>`;
 
 export const emailTemplates = [
