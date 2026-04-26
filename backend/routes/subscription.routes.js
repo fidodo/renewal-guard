@@ -1,6 +1,7 @@
 // export default subscriptionRouter;
 // backend/routes/subscription.routes.js
 import { Router } from "express";
+import multer from "multer";
 import authorize from "../middlewares/auth.middleware.js";
 import {
   createSubscription,
@@ -11,10 +12,23 @@ import {
   updateSubscription,
   cancelSubscription,
   deleteSubscription,
+  extractSubscriptionFromImage,
 } from "../controller/subscription.controller.js";
 import cacheMiddleware from "../middlewares/cache.middleware.js";
 
 const subscriptionRouter = Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"), false);
+    }
+  },
+});
 
 /**
  * @swagger
@@ -22,6 +36,39 @@ const subscriptionRouter = Router();
  *   name: Subscriptions
  *   description: Subscription management
  */
+
+/**
+ * @swagger
+ * /api/subscriptions/extract-from-image:
+ *   post:
+ *     summary: Extract subscription details from receipt/screenshot image
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Extracted subscription data
+ *       400:
+ *         description: No image provided
+ *       500:
+ *         description: Extraction failed
+ */
+subscriptionRouter.post(
+  "/extract-from-image",
+  authorize,
+  upload.single("image"),
+  extractSubscriptionFromImage,
+);
 
 /**
  * @swagger

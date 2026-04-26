@@ -4,63 +4,40 @@ import Subscription from "../models/subscription.model.js";
 import { SERVER_URL } from "../config/env.js";
 import mongoose from "mongoose";
 import { sendReminderEmail } from "../utils/send-email.js";
+import { extractSubscriptionFromReceipt } from "../services/receipt-parser.service.js";
 
-// export const createSubscription = async (req, res, next) => {
-//   let subscription;
+export const extractSubscriptionFromImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image file provided",
+      });
+    }
 
-//   try {
-//     // 1. Create subscription
-//     subscription = await Subscription.create({
-//       ...req.body,
-//       user: req.user._id || req.user.id, // Handle both cases
-//     });
-//     console.log("✅ Subscription created:", subscription._id);
+    console.log("📸 Processing image:", {
+      originalname: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+    });
 
-//     // 2. Send immediate response
-//     res.status(201).json({
-//       success: true,
-//       message: "Subscription created successfully",
-//       data: { subscription },
-//     });
+    // Use Azure Vision to extract subscription data
+    const extractedData = await extractSubscriptionFromReceipt(req.file.buffer);
 
-//     // 3. Trigger workflow ASYNCHRONOUSLY (don't await)
-//     // This won't block the response or cause 500 errors
-//     triggerWorkflowAsync(subscription.id).catch((err) => {
-//       console.warn("⚠️ Background workflow trigger failed:", err.message);
-//       // Can log to monitoring service
-//     });
-//   } catch (error) {
-//     console.error("❌ Error creating subscription:", error);
-//     next(error);
-//   }
-// };
+    console.log("✅ Extracted subscription data:", extractedData);
 
-// // Separate async function for workflow
-// async function triggerWorkflowAsync(subscriptionId) {
-//   // Don't trigger in development or if URL missing
-//   if (process.env.NODE_ENV !== "production" || !process.env.SERVER_URL) {
-//     console.log("⏸️ Skipping workflow trigger in development");
-//     return;
-//   }
-
-//   try {
-//     const { workflowRunId } = await workflowClient.trigger({
-//       url: `${SERVER_URL}/api/v1/workflows/subscription/reminder`,
-//       body: { subscriptionId },
-//       headers: { "Content-Type": "application/json" },
-//       retries: 1, // Single retry
-//     });
-
-//     console.log("✅ Background workflow triggered:", workflowRunId);
-//     return workflowRunId;
-//   } catch (error) {
-//     // Log but don't throw - this is background processing
-//     console.error("❌ Background workflow failed:", error.message);
-//     // Could queue for retry later
-//     await queueWorkflowRetry(subscriptionId);
-//     throw error; // Throw to catch in caller if needed
-//   }
-// }
+    res.status(200).json({
+      success: true,
+      data: extractedData,
+    });
+  } catch (error) {
+    console.error("❌ Error extracting subscription from image:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to extract information from image",
+    });
+  }
+};
 
 export const createSubscription = async (req, res, next) => {
   let subscription;

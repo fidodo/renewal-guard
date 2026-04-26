@@ -106,7 +106,7 @@ export const ImageUploadSubscription = ({
 
   const handleConfirmSubscription = async () => {
     if (!extractedData) return;
-
+    console.log("Extracted Data:", extractedData); // Debug log
     try {
       const token = localStorage.getItem("token");
       const subscriptionData = {
