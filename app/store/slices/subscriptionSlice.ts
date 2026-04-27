@@ -113,7 +113,7 @@ const subscriptionsSlice = createSlice({
         (sub) => sub.id === normalizedSub.id || sub._id === normalizedSub._id,
       );
       if (!exists) {
-        state.subscriptions.push(normalizedSub);
+        state.subscriptions.unshift(normalizedSub);
       }
       state.loading = false;
       state.error = null;

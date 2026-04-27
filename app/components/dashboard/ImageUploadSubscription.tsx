@@ -13,11 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, X, Camera } from "lucide-react";
 import { useAppDispatch } from "@/app/hooks/redux";
 import { createSubscription } from "@/app/store/slices/subscriptionSlice";
+import { Subscription } from "./subscription/SubscriptionForm";
 
 interface ImageUploadSubscriptionProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newSubscription?: Subscription) => void;
 }
 
 interface ExtractedData {
@@ -146,7 +147,7 @@ export const ImageUploadSubscription = ({
       const savedSubscription = result.data?.subscription || result.data;
       dispatch(createSubscription(savedSubscription));
 
-      onSuccess();
+      onSuccess(savedSubscription);
       handleClose();
     } catch (err) {
       console.error("Error creating subscription:", err);
