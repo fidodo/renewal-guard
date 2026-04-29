@@ -190,15 +190,28 @@ export const ImageUploadSubscription = ({
                 accept="image/*"
                 onChange={handleImageSelect}
                 className="hidden"
-                id="image-upload"
-                capture="environment"
+                id="image-upload-gallery"
               />
-              <Label htmlFor="image-upload">
+              <Label htmlFor="image-upload-gallery">
+                <Button variant="outline" className="w-full">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Choose from Gallery
+                </Button>
+              </Label>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageSelect}
+                className="hidden"
+                id="image-upload-camera"
+              />
+              <Label htmlFor="image-upload-camera">
                 <div className="cursor-pointer flex flex-col items-center gap-3">
                   <Camera className="w-12 h-12 text-muted-foreground" />
                   <div>
                     <Button variant="outline" asChild>
-                      <span>Take Photo or Upload Image</span>
+                      <span>Take Photo </span>
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
