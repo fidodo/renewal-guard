@@ -81,12 +81,14 @@ export interface SubscriptionFormProps {
   onCancel: () => void;
   mode?: "create" | "edit";
   onSuccess?: (newSubscription?: Subscription) => void;
+  onEditExisting?: (subscription: Subscription) => void;
 }
 
 const SubscriptionForm = ({
   onSuccess,
   onCancel,
   subscription,
+  onEditExisting,
   mode = "create",
 }: SubscriptionFormProps) => {
   const [formData, setFormData] = useState<SubscriptionFormData>({
@@ -216,6 +218,26 @@ const SubscriptionForm = ({
             );
           }
         }
+      }
+
+      if (response.status === 409) {
+        const errorData = await response.json();
+        alert(errorData.message);
+        // Optionally, offer to edit the existing subscription
+        if (errorData.existingSubscription) {
+          const edit = confirm(
+            "Would you like to edit the existing subscription instead?",
+          );
+          if (edit) {
+            // Close current form
+            onCancel();
+            onEditExisting?.(errorData.existingSubscription);
+            if (onSuccess) {
+              onSuccess(errorData.existingSubscription);
+            }
+          }
+        }
+        return;
       }
 
       if (!response.ok) {

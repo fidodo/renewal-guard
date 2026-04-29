@@ -43,38 +43,64 @@ export const createSubscription = async (req, res, next) => {
   let subscription;
 
   try {
-    // 1. Create subscription
+    const userId = req.user._id || req.user.id;
+    const { name, serviceName } = req.body;
+
+    // ✅ Check for duplicate active subscription
+    const existingSubscription = await Subscription.findOne({
+      user: userId,
+      name: { $regex: new RegExp(`^${name}$`, "i") }, // Case-insensitive match
+      status: { $in: ["active", "pending"] }, // Only check active/pending subscriptions
+    });
+
+    if (existingSubscription) {
+      return res.status(409).json({
+        success: false,
+        message: `You already have an active subscription for "${name}". Please edit the existing one instead.`,
+      });
+    }
+
+    // Optional: Check by serviceName as well
+    if (serviceName) {
+      const existingByService = await Subscription.findOne({
+        user: userId,
+        serviceName: { $regex: new RegExp(`^${serviceName}$`, "i") },
+        status: { $in: ["active", "pending"] },
+      });
+
+      if (existingByService) {
+        return res.status(409).json({
+          success: false,
+          message: `You already have an active subscription for "${serviceName}". Please edit the existing one instead.`,
+        });
+      }
+    }
+
     subscription = await Subscription.create({
       ...req.body,
-      user: req.user._id || req.user.id,
+      user: userId,
     });
     console.log("✅ Subscription created:", subscription._id);
 
-    // Populate user data for email
     const populatedSubscription = await Subscription.findById(
       subscription._id,
     ).populate("user", "name email phone");
 
-    // 2. Send immediate response
     res.status(201).json({
       success: true,
       message: "Subscription created successfully",
       data: { subscription: populatedSubscription },
     });
 
-    // 3. Send email immediately in development OR trigger workflow in production
-    if (process.env.NODE_ENV !== "production") {
-      // Development: Send email directly
-      console.log("📧 Development mode - sending reminder email directly...");
-      await sendReminderEmail({
-        to: req.user.email,
-        type: "7 days before reminder",
-        subscription: populatedSubscription,
-      }).catch((err) => console.error("Email failed:", err.message));
-    } else {
-      // Production: Use workflow
+    await sendReminderEmail({
+      to: req.user.email,
+      type: "7 days before reminder",
+      subscription: populatedSubscription,
+    }).catch((err) => console.error("❌ Email error:", err.message));
+
+    if (process.env.NODE_ENV === "production") {
       triggerWorkflowAsync(subscription._id).catch((err) => {
-        console.warn("⚠️ Background workflow trigger failed:", err.message);
+        console.warn("⚠️ Workflow trigger failed:", err.message);
       });
     }
   } catch (error) {
