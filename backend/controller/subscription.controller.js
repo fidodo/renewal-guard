@@ -46,32 +46,42 @@ export const createSubscription = async (req, res, next) => {
     const userId = req.user._id || req.user.id;
     const { name, serviceName } = req.body;
 
-    // ✅ Check for duplicate active subscription
+    // ✅ Check for duplicate ACTIVE subscription only (not cancelled or expired)
     const existingSubscription = await Subscription.findOne({
       user: userId,
-      name: { $regex: new RegExp(`^${name}$`, "i") }, // Case-insensitive match
-      status: { $in: ["active", "pending"] }, // Only check active/pending subscriptions
+      name: { $regex: new RegExp(`^${name}$`, "i") },
+      status: "active", // ✅ Only check ACTIVE subscriptions
     });
 
     if (existingSubscription) {
       return res.status(409).json({
         success: false,
-        message: `You already have an active subscription for "${name}". Please edit the existing one instead.`,
+        message: `You already have an ACTIVE subscription for "${name}". Please edit or cancel the existing one instead.`,
+        existingSubscription: {
+          id: existingSubscription._id,
+          name: existingSubscription.name,
+          status: existingSubscription.status,
+        },
       });
     }
 
-    // Optional: Check by serviceName as well
+    // Optional: Check by serviceName for ACTIVE subscriptions only
     if (serviceName) {
       const existingByService = await Subscription.findOne({
         user: userId,
         serviceName: { $regex: new RegExp(`^${serviceName}$`, "i") },
-        status: { $in: ["active", "pending"] },
+        status: "active", // ✅ Only check ACTIVE subscriptions
       });
 
       if (existingByService) {
         return res.status(409).json({
           success: false,
-          message: `You already have an active subscription for "${serviceName}". Please edit the existing one instead.`,
+          message: `You already have an ACTIVE subscription for "${serviceName}". Please edit or cancel the existing one instead.`,
+          existingSubscription: {
+            id: existingByService._id,
+            name: existingByService.name,
+            status: existingByService.status,
+          },
         });
       }
     }
@@ -92,12 +102,14 @@ export const createSubscription = async (req, res, next) => {
       data: { subscription: populatedSubscription },
     });
 
+    // Send confirmation email
     await sendReminderEmail({
       to: req.user.email,
-      type: "7 days before reminder",
+      type: "subscription_created", // ✅ Use subscription_created template
       subscription: populatedSubscription,
     }).catch((err) => console.error("❌ Email error:", err.message));
 
+    // Trigger workflow for future reminders (only in production)
     if (process.env.NODE_ENV === "production") {
       triggerWorkflowAsync(subscription._id).catch((err) => {
         console.warn("⚠️ Workflow trigger failed:", err.message);
@@ -109,7 +121,6 @@ export const createSubscription = async (req, res, next) => {
   }
 };
 
-// ✅ FIXED: Allow workflow in development for testing
 async function triggerWorkflowAsync(subscriptionId) {
   // Allow in development if explicitly enabled OR in production
   const shouldTrigger =

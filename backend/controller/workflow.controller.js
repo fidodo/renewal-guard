@@ -4,21 +4,16 @@ import dayjs from "dayjs";
 import Subscription from "../models/subscription.model.js";
 import { sendReminderEmail } from "../utils/send-email.js";
 import { sendReminderSMS } from "../utils/send-sms.js";
+import Setting from "../models/setting.model.js";
 
 const require = createRequire(import.meta.url);
 const { serve } = require("@upstash/workflow/express");
-
-const REMINDERS = [
-  { days: 7, label: "7 days before reminder" },
-  { days: 5, label: "5 days before reminder" },
-  { days: 2, label: "2 days before reminder" },
-  { days: 1, label: "1 day before reminder" },
-];
 
 export const sendReminders = serve(async (context) => {
   const { subscriptionId } = context.requestPayload;
   console.log(`📋 Starting workflow for subscription: ${subscriptionId}`);
 
+  // ✅ fetchSubscription is important - it gets the subscription data from database
   const subscription = await fetchSubscription(context, subscriptionId);
 
   if (!subscription || subscription.status !== "active") {
@@ -31,6 +26,11 @@ export const sendReminders = serve(async (context) => {
     return;
   }
 
+  // ✅ Get user settings for reminder days
+  const settings = await Setting.findOne({ userId: subscription.user._id });
+  const reminderDays = settings?.reminderDays || [7, 5, 2, 1];
+  console.log(`📅 Reminder days from settings: ${reminderDays.join(", ")}`);
+
   const renewalDate = dayjs(subscription.billingDate.nextBillingDate);
   const today = dayjs();
 
@@ -42,18 +42,25 @@ export const sendReminders = serve(async (context) => {
   console.log(`Renewal date: ${renewalDate.format("YYYY-MM-DD")}`);
   console.log(`User email: ${subscription.user.email}`);
 
-  for (const reminder of REMINDERS) {
-    const reminderDate = renewalDate.subtract(reminder.days, "day");
+  for (const daysBefore of reminderDays) {
+    const reminderDate = renewalDate.subtract(daysBefore, "day");
 
     if (reminderDate.isAfter(today)) {
       console.log(
-        `⏰ Scheduling ${reminder.label} for ${reminderDate.format("YYYY-MM-DD")}`,
+        `⏰ Scheduling ${daysBefore} day reminder for ${reminderDate.format("YYYY-MM-DD")}`,
       );
-      await context.sleepUntil(reminder.label, reminderDate.toDate());
+      await context.sleepUntil(
+        `${daysBefore} days before reminder`,
+        reminderDate.toDate(),
+      );
     }
 
     if (dayjs().isSame(reminderDate, "day") || dayjs().isAfter(reminderDate)) {
-      await triggerReminder(context, reminder.label, subscription);
+      await triggerReminder(
+        context,
+        `${daysBefore} days before reminder`,
+        subscription,
+      );
     }
   }
 });

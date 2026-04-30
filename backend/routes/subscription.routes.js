@@ -162,12 +162,7 @@ subscriptionRouter.get(
  *       200:
  *         description: List of user subscriptions
  */
-subscriptionRouter.get(
-  "/user",
-  authorize,
-  cacheMiddleware(220),
-  getUserSubscriptions,
-);
+subscriptionRouter.get("/user", authorize, getUserSubscriptions);
 
 /**
  * @swagger
